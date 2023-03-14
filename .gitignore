@@ -1,0 +1,10 @@
+.venv
+build
+install
+devel
+.vscode
+log
+obsolete
+__pycache__
+test
+
