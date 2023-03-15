@@ -1,6 +1,5 @@
 
 import sys, os
-print(sys.path)
 from rlbot.setup_manager import SetupManager
 from rlbot.utils.python_version_check import check_python_version
 cfg = os.environ.get("RLBOT_AGENT_DIR")+"/rlbot.cfg"

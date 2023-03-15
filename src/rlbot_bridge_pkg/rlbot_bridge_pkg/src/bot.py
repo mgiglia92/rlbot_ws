@@ -1,4 +1,5 @@
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
+from rlbot.utils.game_state_util import GameState, Physics, Rotator, Vector3, CarState, BallState, GameInfoState
 from rlbot.messages.flat.QuickChatSelection import QuickChatSelection
 from rlbot.utils.structures.game_data_struct import GameTickPacket
 from rlbot.utils.structures.rigid_body_struct import RigidBodyTick
@@ -13,6 +14,7 @@ from std_msgs.msg import String
 # from rclpy.qos import QoSProfile
 from rlbot_msgs.msg import RigidBodyTick as RigidBodyTickMsg
 import numpy as np
+import time
 
 if(not rclpy.ok()):
     rclpy.init()
@@ -30,6 +32,7 @@ class MyBot(BaseAgent):
         self.ros_controls = SimpleControllerState()
         # executor = rclpy.executors.MultiThreadedExecutor()
         # executor.add_node(self.node)
+        self.initialize_agent()
 
     def ros_init(self):
         self.node = Node("rlbot_node")
@@ -68,20 +71,29 @@ class MyBot(BaseAgent):
         self.ros_controls.steer = np.clip(msg.angular.z, -1 ,1)
 
     def initialize_agent(self):
-        # Set up information about the boost pads now that the game is active and the info is available
-        # self.boost_pad_tracker.initialize_boosts(self.get_field_info())
-        pass
+        try:
+            time.sleep(1)
+            car_state = CarState(boost_amount=100,
+                                physics=Physics(location = Vector3(x=0, y=0), velocity=Vector3(x=0,y=0), rotation=Rotator(0, 0, 0),
+                                angular_velocity=Vector3(0, 0, 0)))
+            ball_state = BallState(Physics(location=Vector3(1000, 1000, None)))
+            game_info_state = GameInfoState()
+            game_state = GameState(ball=ball_state, cars={self.index: car_state}, game_info=game_info_state)
+            time.sleep(1)
+            self.set_game_state(game_state)
+            time.sleep(1)
+            self.set_game_state(game_state)
+        except Exception as e:
+            print(e)
     
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
         """
         This function will be called by the framework many times per second. This is where you can
         see the motion of the ball, etc. and return controls to drive your car.
         """
-
         
         # self.publisher_.publish(msg)
         msg = self.populate_rigid_body_tick_message()
-        self.node.get_logger().debug(f"SENDING: {msg}")
         self.publisher_.publish(msg)
         print(f"Throttle: {self.ros_controls.throttle}")
         return self.ros_controls
@@ -94,6 +106,8 @@ class MyBot(BaseAgent):
         p = gtp.players[self.index].state.location
         v = gtp.players[self.index].state.velocity
         w = gtp.players[self.index].state.angular_velocity
+        throttle = gtp.players[self.index].input.throttle
+        steer = gtp.players[self.index].input.steer
         msg.bot_state.pose.orientation.x = q.x
         msg.bot_state.pose.orientation.y = q.y
         msg.bot_state.pose.orientation.z = q.z
@@ -107,6 +121,9 @@ class MyBot(BaseAgent):
         msg.bot_state.twist.angular.x = w.x
         msg.bot_state.twist.angular.y = w.y
         msg.bot_state.twist.angular.z = w.z
+        self.node.get_logger().info(f"angvel: {w.z}")
+        msg.bot_state.throttle = throttle
+        msg.bot_state.steer = steer
         
         return msg
 
