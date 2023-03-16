@@ -5,7 +5,7 @@ from geometry_msgs.msg import Quaternion as QMsg
 from rlbot_msgs.msg import RigidBodyTick as RigidBodyTickMsg
 import numpy as np
 from pyquaternion import Quaternion
-from controller_util import get_best_steering_and_throttle
+from simple_controller_pkg.controller_util import get_best_steering_and_throttle
 import argparse
 
 parser = argparse.ArgumentParser(
