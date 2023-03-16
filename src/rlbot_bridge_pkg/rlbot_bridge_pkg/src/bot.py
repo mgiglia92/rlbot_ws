@@ -13,6 +13,7 @@ from geometry_msgs.msg import Twist, Quaternion
 from std_msgs.msg import String
 # from rclpy.qos import QoSProfile
 from rlbot_msgs.msg import RigidBodyTick as RigidBodyTickMsg
+from rlbot_msgs.srv import ResetGameState
 import numpy as np
 import time
 
@@ -37,13 +38,14 @@ class MyBot(BaseAgent):
     def ros_init(self):
         self.node = Node("rlbot_node")
         self.thread = Thread(target=self.rclpy_executor, args=[self.node], daemon=True)
-        # self.timer = self.node.create_timer(1.0, self.idle)
         self.publisher_ = self.node.create_publisher(RigidBodyTickMsg, f"/player0/RigidBodyTick", 10)
         self.subscriber_ = self.node.create_subscription(Twist, "/cmd_vel", self.listener_callback, 10)
         self.subscriber_
+        self.srv = self.node.create_service(ResetGameState, 'reset_game_state', self.run_srv)
         # self.publisher_ = self.node.create_publisher(GameTickPacketMsg, '/GameTickPacket',10)
         if(not self.thread.is_alive()):
             self.thread.start()
+
 
     def retire(self):
         try:
@@ -58,12 +60,37 @@ class MyBot(BaseAgent):
             print("Shutdown failed!")
 
     # Thread that spins the node
-    def rclpy_executor(self, node):
+    def rclpy_executor(self, node: Node):
         try:
             rclpy.spin(node)
         except Exception as e:
             print(e)
             rclpy.shutdown()
+
+    def run_srv(self, request, response):
+        try:
+            self.node.get_logger().info(f"Incoming request: {request}")
+            car = request.rigid_body_tick.bot_state
+            carp = car.pose.position
+            caro = car.pose.orientation
+            carv = car.twist.linear
+            carw = car.twist.angular
+            ball = request.rigid_body_tick.ball_state.pose.position
+            car_state = CarState(boost_amount=100,
+                                physics=Physics(location = Vector3(x=carp.x, y=carp.y), velocity=Vector3(x=carv.x,y=carv.y), rotation=Rotator(0, 0, 0),
+                                angular_velocity=Vector3(carw.x, carw.y, carw.z)))
+            ball_state = BallState(Physics(location=Vector3(ball.x, ball.y, ball.z)))
+            game_info_state = GameInfoState(world_gravity_z=0)
+            game_state = GameState(ball=ball_state, cars={self.index: car_state}, game_info=game_info_state)
+            self.set_game_state(game_state)
+            response.success = True
+            return response
+        except Exception as e:
+            response.success = False
+            import traceback
+            self.node.get_logger().warn(f"{traceback.print_exc()}")
+            
+        return response
 
     def listener_callback(self, msg: Twist):
         self.node.get_logger().debug('I heard: "%s"' % msg.linear.x)
@@ -71,20 +98,7 @@ class MyBot(BaseAgent):
         self.ros_controls.steer = np.clip(msg.angular.z, -1 ,1)
 
     def initialize_agent(self):
-        try:
-            time.sleep(1)
-            car_state = CarState(boost_amount=100,
-                                physics=Physics(location = Vector3(x=0, y=0), velocity=Vector3(x=0,y=0), rotation=Rotator(0, 0, 0),
-                                angular_velocity=Vector3(0, 0, 0)))
-            ball_state = BallState(Physics(location=Vector3(1000, 1000, None)))
-            game_info_state = GameInfoState()
-            game_state = GameState(ball=ball_state, cars={self.index: car_state}, game_info=game_info_state)
-            time.sleep(1)
-            self.set_game_state(game_state)
-            time.sleep(1)
-            self.set_game_state(game_state)
-        except Exception as e:
-            print(e)
+        pass
     
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
         """
