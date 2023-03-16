@@ -29,7 +29,8 @@ class PhaseSpacePlotterNode(Node):
         self.steer=0.0
     
     def timer_callback(self):
-        self.ax.plot(self.steer_history[-100:], self.w_history[-100:], self.vmag_history[-100:],'r.')
+        plt.cla()
+        self.ax.plot(self.steer_history[-100:-1], self.w_history[-100:-1], self.vmag_history[-100:-1],'r.')
         plt.draw()
         plt.pause(0.001)
     
@@ -39,8 +40,7 @@ class PhaseSpacePlotterNode(Node):
 
     def listener_callback(self, msg:RigidBodyTick):
         # Get state and inputs
-        v = to_numpy(msg.bot_state.twist.linear)
-        vmag = np.linalg.norm(v)
+        vmag = msg.bot_state.vmag
         w = msg.bot_state.twist.angular.z
         throttle = float(msg.bot_state.throttle)
         steer = float(msg.bot_state.steer)
