@@ -11,7 +11,7 @@ def main():
     manager = SetupManager()
     manager.load_config(config_location=cfg)
     manager.connect_to_game()
-    manager.launch_early_start_bot_processes()
+    # manager.launch_early_start_bot_processes()
     manager.start_match()
     manager.launch_bot_processes()
     manager.infinite_loop()  # Runs forever until interrupted

@@ -13,6 +13,7 @@
   <test_depend>python3-pytest</test_depend>
   <build_depend>rlbot_msgs</build_depend>
   <build_depend>rclpy</build_depend>
+  <build_depend>lark</build_depend>
   <export>
     <build_type>ament_python</build_type>
   </export>

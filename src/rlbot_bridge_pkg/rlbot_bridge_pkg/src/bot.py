@@ -98,7 +98,7 @@ class MyBot(BaseAgent):
         self.node.get_logger().info(f"Throttle: {self.ros_controls.throttle}, vmag: {msg.bot_state.vmag}, angvel: {msg.bot_state.twist.angular.z}")
         return self.ros_controls
 
-    def populate_rigid_body_tick_message(self, gametick):
+    def populate_rigid_body_tick_message(self):
         gtp = RigidBodyTick()
         gtp = self.get_rigid_body_tick()
         msg = RigidBodyTickMsg()
