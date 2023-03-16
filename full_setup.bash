@@ -5,5 +5,5 @@ export RLBOT_PKG_DIR=/home/mgiglia/workspaces/rlbot_ws/src/rlbot_bridge_pkg
 export RLBOT_AGENT_DIR=/home/mgiglia/workspaces/rlbot_ws/src/rlbot_bridge_pkg/rlbot_bridge_pkg
 echo $RL_BOT_WS_DIR
 source $RLBOT_WS_DIR/install/local_setup.bash
-source $RLBOT_PKG_DIR/lib/.venv/bin/activate
+source $RLBOT_WS_DIR/.ros_venv/bin/activate
 #cd $RLBOT_AGENT_DIR
