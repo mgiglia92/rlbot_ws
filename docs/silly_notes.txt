@@ -1,0 +1,3 @@
+in setup.cfg add
+[build scripts]
+executable = /usr/bin/env python3

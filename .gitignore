@@ -7,3 +7,5 @@ log
 obsolete
 __pycache__
 test
+.ros_venv
+
