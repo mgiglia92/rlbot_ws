@@ -32,7 +32,6 @@ def get_best_steering_and_throttle(vmag, des_a, des_w):
     a_min = -3500
     w_max = SteeringRelationship.getWMax(vmag)
     coast = 0.0125
-    print(a_max)
     if des_a > 0.0:
         u_t = np.clip(des_a/a_max, coast, 1)
     elif (des_a >-500) and (des_a < 0):

@@ -95,10 +95,10 @@ class MyBot(BaseAgent):
         # self.publisher_.publish(msg)
         msg = self.populate_rigid_body_tick_message()
         self.publisher_.publish(msg)
-        print(f"Throttle: {self.ros_controls.throttle}")
+        self.node.get_logger().info(f"Throttle: {self.ros_controls.throttle}, vmag: {msg.bot_state.vmag}, angvel: {msg.bot_state.twist.angular.z}")
         return self.ros_controls
 
-    def populate_rigid_body_tick_message(self):
+    def populate_rigid_body_tick_message(self, gametick):
         gtp = RigidBodyTick()
         gtp = self.get_rigid_body_tick()
         msg = RigidBodyTickMsg()
@@ -124,6 +124,7 @@ class MyBot(BaseAgent):
         self.node.get_logger().info(f"angvel: {w.z}")
         msg.bot_state.throttle = throttle
         msg.bot_state.steer = steer
+        msg.bot_state.vmag = np.linalg.norm([v.x, v.y, v.z])
         
         return msg
 

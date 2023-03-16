@@ -33,6 +33,15 @@ class SimpleController(Node):
         self.prev_vmag = 0
         self.prev_err = 0
         self.integrand = 0
+        if args.velocity is not None:
+            self.des = args.velocity
+        else:
+            self.des = 0
+        if args.angvel is not None:
+            self.des = args.angvel
+        else:
+            self.des_w = 0 
+        self.des_w = args.angvel
 
     def listener_callback(self, msg):
         # Do nasty controls math all clobbered up 
@@ -44,23 +53,22 @@ class SimpleController(Node):
         body_vel = quat.inverse.rotate(vec)
         sign = np.sign(np.dot(body_vel, np.array([1,0,0])))
         body_vel = body_vel     
-        vmag = np.linalg.norm(body_vel) * sign
+        vmag = msg.bot_state.vmag
         kp = 1.0
         ki = 0
         kd = 0.001
-        des = args.velocity
-        err = des-vmag
+        err = 1000-vmag
 
         self.integrand = np.clip(self.integrand + (err*dt/1e9), -1, 1)
 
         des_a = kp*(err) + kd*(err - self.prev_err / (dt/1e9)) + ki*self.integrand
-        des_w = args.angvel
-        u_t, u_s = get_best_steering_and_throttle(vmag, des_a, des_w)
+
+        u_t, u_s = get_best_steering_and_throttle(vmag, des_a, self.des_w)
         twist = Twist()
         twist.linear.x = u_t
         twist.angular.z = u_s
         self.publisher_.publish(twist)
-        self.get_logger().info(f"body_vel: {vmag:0.2f} ades:{des_a:0.2f} u_t: {u_t:0.5f} body_w: {msg.bot_state.twist.angular.z:0.2f} wdes:{des_w:0.2f}")
+        self.get_logger().info(f"des:{self.des}, v:{vmag}, u_t:{u_t}, desa:{des_a} err:{err}")
         self.prev_time = tnow
         self.prev_vmag = body_vel
         self.prev_err = err
