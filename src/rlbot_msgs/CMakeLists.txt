@@ -16,7 +16,10 @@ find_package(rosidl_default_generators REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/State.msg"
   "msg/RigidBodyTick.msg"
+  "msg/PIDGains.msg"
   "srv/ResetGameState.srv"
+  "srv/SetGains.srv"
+  "msg/Polynomial3.msg"
   DEPENDENCIES geometry_msgs
  )
 
