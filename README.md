@@ -4,7 +4,7 @@
 >- Install ros2 and dev packages (do full)  
 >- Make venv in root of ws
 >- Activate, pip install rlbot, pyquaternion, scipy
->- TODO: Add requirements.txt for venv  
+>- Install setup/python_req.txt for venv  
 >- colcon build  in root of ws
 >- TODO:Make full_setup.bash non-absolute
 >- Run . full_setup.bash will source python venv and ros env stuff  
