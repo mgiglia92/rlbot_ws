@@ -2,9 +2,11 @@
 # Installng/Building
 >- Download steam, install rocket league.
 >- Install ros2 and dev packages (do full)  
->- Need .venv in rlbot_bridge_pkg/lib/  
->- Activate, pip install rlbot  
->- colcon build  
+>- Make venv in root of ws
+>- Activate, pip install rlbot, pyquaternion, scipy
+>- TODO: Add requirements.txt for venv  
+>- colcon build  in root of ws
+>- TODO:Make full_setup.bash non-absolute
 >- Run . full_setup.bash will source python venv and ros env stuff  
 >- ros2 run node rlbot_bridge_pkg AgentNode   
 >- This will start rlbot and rocket league from steam  
