@@ -1,5 +1,5 @@
 
-># Installng/Building
+# Installng/Building
 >- Download steam, install rocket league.
 >- Install ros2 and dev packages (do full)  
 >- Need .venv in rlbot_bridge_pkg/lib/  
