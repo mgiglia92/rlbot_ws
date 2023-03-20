@@ -3,9 +3,10 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist, Vector3
 from geometry_msgs.msg import Quaternion as QMsg
 from rlbot_msgs.msg import RigidBodyTick as RigidBodyTickMsg
+from rlbot_msgs.srv import SetGains
 import numpy as np
 from pyquaternion import Quaternion
-from simple_controller_pkg.controller_util import get_best_steering_and_throttle
+from simple_controller_pkg.controller_util import get_best_steering_and_throttle, PIDStruct
 import argparse
 
 parser = argparse.ArgumentParser(
@@ -18,13 +19,12 @@ parser.add_argument('-w', '--angvel', type=float)
 args = parser.parse_args()
 
 class SimpleController(Node):
-
+    gains = PIDStruct()
     def __init__(self):
         super().__init__('simple_controller')
         self.publisher_ = self.create_publisher(Twist, "/cmd_vel", 10)
         self.subscription_ = self.create_subscription(RigidBodyTickMsg, "/player0/RigidBodyTick", self.listener_callback, 10)
-        # timer_period = 0.5  # seconds
-        # self.timer = self.create_timer(timer_period, self.timer_callback)
+        self.services_ = self.create_service(SetGains, "/simple_controller/set_gains", self.service_callback)
         self.i = 0
         self.subscription_
 
@@ -36,12 +36,18 @@ class SimpleController(Node):
         if args.velocity is not None:
             self.des = args.velocity
         else:
-            self.des = 0
+            self.des_w = 0
         if args.angvel is not None:
-            self.des = args.angvel
+            self.des_w = args.angvel
         else:
             self.des_w = 0 
         self.des_w = args.angvel
+    
+    def service_callback(self, request, response):
+        self.gains.set_from_ros_msg(request.gains)
+        self.get_logger().info(f"Set gains: {request.gains}")
+        response.success = True
+        return response
 
     def listener_callback(self, msg):
         # Do nasty controls math all clobbered up 
@@ -52,14 +58,13 @@ class SimpleController(Node):
         quat = Quaternion(q).unit
         body_vel = quat.inverse.rotate(vec)
         sign = np.sign(np.dot(body_vel, np.array([1,0,0])))
-        body_vel = body_vel     
+        body_vel = body_vel
         vmag = msg.bot_state.vmag
-        kp = 1.0
-        ki = 0
-        kd = 0.001
-        err = 1000-vmag
-
-        self.integrand = np.clip(self.integrand + (err*dt/1e9), -1, 1)
+        kp = self.gains.kp
+        ki = self.gains.ki
+        kd = self.gains.kd
+        err = self.des-vmag
+        self.integrand = np.clip(self.integrand + (err*dt/1e9), -1400, 1400)
 
         des_a = kp*(err) + kd*(err - self.prev_err / (dt/1e9)) + ki*self.integrand
 
@@ -68,7 +73,7 @@ class SimpleController(Node):
         twist.linear.x = u_t
         twist.angular.z = u_s
         self.publisher_.publish(twist)
-        self.get_logger().info(f"des:{self.des}, v:{vmag}, u_t:{u_t}, desa:{des_a} err:{err}")
+        self.get_logger().info(f"err:{err:.2f} des:{self.des:.2f}, v:{vmag:.2f}, desa:{des_a:.2f}, angvel:{msg.bot_state.twist.angular.z:.2f}")
         self.prev_time = tnow
         self.prev_vmag = body_vel
         self.prev_err = err

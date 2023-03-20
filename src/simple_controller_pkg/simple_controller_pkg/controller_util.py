@@ -1,8 +1,20 @@
 from scipy.interpolate import UnivariateSpline
 from geometry_msgs.msg import Vector3, Twist
+from rlbot_msgs.msg import PIDGains
 import matplotlib.pyplot as plt
 import numpy as np
 
+###------------------------------------------------
+class PIDStruct:
+    kp=0.0
+    ki=0.0
+    kd=0.0
+    dt=1
+    def set_from_ros_msg(self, msg:PIDGains):
+        self.kp=msg.kp
+        self.ki=msg.ki
+        self.kd=msg.kd
+        self.dt=msg.dt
 ###------------------------------------------------
 
 class AccelerationRelationship:
@@ -25,20 +37,23 @@ class SteeringRelationship:
     getWMax = UnivariateSpline(vel, w, k=4)
 
 ###_----------------------------------------------
+# Get open loop estimations for controler input based on a desired acceleration and angularvelocity
 def get_best_steering_and_throttle(vmag, des_a, des_w):
     # des_a = twist.linear.x
     # des_w = twist.angular.z
+    #TODO: Set this up for driving backwards throttles
     a_max = AccelerationRelationship.getAmax(vmag)
     a_min = -3500
     w_max = SteeringRelationship.getWMax(vmag)
     coast = 0.0125
+    u_t = 0.0
     if des_a > 0.0:
-        u_t = np.clip(des_a/a_max, coast, 1)
-    elif (des_a >-500) and (des_a < 0):
-        u_t = np.interp(des_a, [-500,0], [-coast, coast])
-    elif des_a <= -500:
-        u_t = np.clip(-1*des_a/a_min, -1, coast)
-    u_s = np.clip(des_w/w_max, -1, 1)
+        u_t = np.clip(des_a/a_max, coast, 1.0)
+    # elif (des_a >-500) and (des_a < 0):
+    #     u_t = np.interp(des_a, [-500,0], [-coast, coast])
+    elif des_a <= -500.0:
+        u_t = np.clip(-1*des_a/a_min, -1.0, coast)
+    u_s = np.clip(des_w/w_max, -1.0, 1.0)
     return u_t, u_s
 
 def to_numpy(v):
