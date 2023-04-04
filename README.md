@@ -8,6 +8,7 @@
 >- colcon build  in root of ws
 >- TODO:Make full_setup.bash non-absolute
 >- Run . full_setup.bash will source python venv and ros env stuff  
+>- Run steam BEFORE running AgentNode that way the agentnode instance isn't spawning the steam app
 >- ros2 run node rlbot_bridge_pkg AgentNode   
 >- This will start rlbot and rocket league from steam  
 >- ros2 run node simpler_controller_pkg SimplerControllerNode  
