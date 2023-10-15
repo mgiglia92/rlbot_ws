@@ -20,6 +20,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/ResetGameState.srv"
   "srv/SetGains.srv"
   "msg/Polynomial3.msg"
+  "action/ControlVelocity.action"
   DEPENDENCIES geometry_msgs
  )
 
