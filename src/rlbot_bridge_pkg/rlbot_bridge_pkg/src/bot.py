@@ -8,12 +8,14 @@ from threading import Thread
 import os
 import sys
 import rclpy
+from rclpy.action import ActionServer
 from rclpy.node import Node
 from geometry_msgs.msg import Twist, Quaternion
 from std_msgs.msg import String
 # from rclpy.qos import QoSProfile
 from rlbot_msgs.msg import RigidBodyTick as RigidBodyTickMsg
 from rlbot_msgs.srv import ResetGameState
+from rlbot_msgs.action import ControlVelocity
 import numpy as np
 import time
 
@@ -42,6 +44,8 @@ class MyBot(BaseAgent):
         self.subscriber_ = self.node.create_subscription(Twist, "/cmd_vel", self.listener_callback, 10)
         self.subscriber_
         self.srv = self.node.create_service(ResetGameState, 'reset_game_state', self.run_srv)
+        self.control_velocity_action_server = \
+            ActionServer(self.node, ControlVelocity, 'ctrl_vel', self.control_velocity_action)
         # self.publisher_ = self.node.create_publisher(GameTickPacketMsg, '/GameTickPacket',10)
         if(not self.thread.is_alive()):
             self.thread.start()
@@ -66,6 +70,14 @@ class MyBot(BaseAgent):
         except Exception as e:
             print(e)
             rclpy.shutdown()
+
+    def control_velocity_action(self, goal_handle):
+        # self.node.get_logger().info('Executing goal...')
+        
+        result = ControlVelocity.Result()
+        result.trajectory.append(self.populate_rigid_body_tick_message())
+        # while(True): print("HERHERHER")
+        return result
 
     def run_srv(self, request, response):
         try:
@@ -109,7 +121,7 @@ class MyBot(BaseAgent):
         # self.publisher_.publish(msg)
         msg = self.populate_rigid_body_tick_message()
         self.publisher_.publish(msg)
-        self.node.get_logger().info(f"Throttle: {self.ros_controls.throttle}, vmag: {msg.bot_state.vmag}, angvel: {msg.bot_state.twist.angular.z}")
+        # self.node.get_logger().info(f"Throttle: {self.ros_controls.throttle}, vmag: {msg.bot_state.vmag}, angvel: {msg.bot_state.twist.angular.z}")
         return self.ros_controls
 
     def populate_rigid_body_tick_message(self):
@@ -135,7 +147,7 @@ class MyBot(BaseAgent):
         msg.bot_state.twist.angular.x = w.x
         msg.bot_state.twist.angular.y = w.y
         msg.bot_state.twist.angular.z = w.z
-        self.node.get_logger().info(f"angvel: {w.z}")
+        # self.node.get_logger().info(f"angvel: {w.z}")
         msg.bot_state.throttle = throttle
         msg.bot_state.steer = steer
         msg.bot_state.vmag = np.linalg.norm([v.x, v.y, v.z])
