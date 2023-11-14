@@ -63,7 +63,7 @@ class TrajectoryOpti(Opti):
         # return vertcat(0,0,0,0,0)
         return vertcat( x[6]*cos(x[4]+x[5])          ,     #xdot
                         x[6]*sin(x[4]+x[5]),     #ydot
-                        x[6]*cos(x[5]),     #xddot
+                        x[6]*cos(x[4]),     #xddot
                         x[6]*sin(x[4]),     #yddot
                         u[1]*x[6]*0.01,               #thetadot
                         0,                  #theatddot
@@ -100,8 +100,9 @@ class TrajectoryOpti(Opti):
     def set_constraints(self):
         self.set_rk4(self.X,self.U,self.T,self.N)
         self.subject_to(self.bounded(-1, self.U[1,:], 1)) # Bound U
-        self.subject_to(self.bounded(-1400, self.U[0,:],1400)) # BOund U
+        self.subject_to(self.bounded(-3300, self.U[0,:],1600)) # BOund U
         self.subject_to(self.bounded(0.1, self.T, 100)) # Bound Time
+        self.subject_to(self.bounded(0, self.X[6,:], 2300)) # Bound vmag
         # self.subject_to(self.X[])
         # self.subject_to(self.X[2,-1]*sin(-1*self.X[4,-1]) + self.X[3,-1]*cos(-1*self.X[4,-1]) == 0)
         # self.subject_to(self.U[1,:] == self.X[5,:d-1])
@@ -153,8 +154,8 @@ class TrajectoryOpti(Opti):
 
 opti = TrajectoryOpti()
 # opti.testrk4()
-IC = ActiveTraits([1,1,0,0,1,1,1],[0, 0, 0, 0, 0, 0,1000])
-FC = ActiveTraits([1,1,0,0,1 ,0,1], [0, 1000, 0, 0, 0, 0, 0])
+IC = ActiveTraits([1,1,1,1,1,1,1],[0, 0, 0, 0, 0, 0,1000])
+FC = ActiveTraits([1,1,0,0,1 ,0,1], [0, 2000, 0, 0, 0, 0, 100])
 sol = opti.reset_optimizer(IC, FC)
 
 # IC = ActiveTraits([1,1,1,1,1,1,1],[0, 0, 0,0,1.5,0,0])
@@ -170,7 +171,8 @@ xdot = sol.value(opti.X[2,:])
 ydot = sol.value(opti.X[3,:])
 theta = sol.value(opti.X[4,:])
 thetadot = sol.value(opti.X[5,:])
-v = np.sqrt(xdot**2 + ydot**2)
+v = sol.value(opti.X[6,:])
+vcalc = np.sqrt(xdot**2 + ydot**2)
 throttle = sol.value(opti.U[0,:])
 steer = sol.value(opti.U[1,:])
 
@@ -181,9 +183,13 @@ for i in range(len(x)):
     # plt.quiver(x[i],y[i],xdot[i],ydot[i], angles='xy', color='g')
     plt.quiver(x[i],y[i], np.cos(theta[i]), np.sin(theta[i]), angles='xy', scale_units='xy', color='black')
     if(i<len(throttle)):
-        plt.quiver(x[i],y[i],throttle[i]*np.cos(theta[i])/1400, throttle[i]*np.sin(theta[i])/1400, angles='xy', scale_units='xy', color='red')
-plt.ylim(-1500,1500)
-plt.xlim(-1500,1500)
+        if(throttle[i] >=0):
+            plt.quiver(x[i],y[i],throttle[i]*np.cos(theta[i])/1400, throttle[i]*np.sin(theta[i])/1400, angles='xy', scale_units='xy', color='red')
+        else:
+            plt.quiver(x[i],y[i],throttle[i]*np.cos(theta[i])/1400, throttle[i]*np.sin(theta[i])/1400, angles='xy', scale_units='xy', color='blue')
+
+plt.ylim(-100,2000)
+plt.xlim(-100,2000)
 plt.legend()
 plt.figure(2)
 plt.plot(t[:-1], throttle/1400, 'r-', label='throttle')
@@ -203,10 +209,16 @@ fig = plt.figure(4)
 ax = fig.subplots(3,1)
 ax[0].plot(t[:-1], throttle, 'r.')
 ax[1].plot(t[:-1],steer, 'b.')
-ax[0].set_ylim(-1400,1400)
+# ax[0].set_ylim(-1400,1500)
 ax[1].set_ylim(-1,1)
-ax[2].plot(t[:-1], v[:-1], 'k')
-ax[2].set_ylim(-1400, 1400)
+ax[2].plot(t[:-1], v[:-1], 'k-')
+ax[2].plot(t[:-1], vcalc[:-1], 'b-')
+# ax[2].set_ylim(-1500, 1500)
+fig = plt.figure(5)
+plt.plot(t, xdot, 'r.')
+plt.plot(t, ydot, 'g.')
+
+
 plt.show(block=False)
 plt.pause(0.01)
 print("DEBUG")
