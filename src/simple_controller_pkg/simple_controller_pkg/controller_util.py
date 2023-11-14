@@ -1,4 +1,4 @@
-from scipy.interpolate import UnivariateSpline
+from scipy.interpolate import UnivariateSpline, BSpline, splrep
 from geometry_msgs.msg import Vector3, Twist
 from rlbot_msgs.msg import PIDGains
 import matplotlib.pyplot as plt
@@ -25,6 +25,10 @@ class AccelerationRelationship:
     
     # Get throttle accelerations max
     getAmax = UnivariateSpline(veval, aeval, k=5)
+    aCoeffs = np.polyfit(veval, aeval, deg=5)
+    (t,c,k) = splrep(veval, aeval, k=3)
+    aspline = BSpline(t,c,k)
+    print("DEBUG")
 
 class SteeringRelationship:
     vel = np.array([0, 500, 1000, 1500, 1750, 2300])
@@ -45,7 +49,7 @@ def get_best_steering_and_throttle(vmag, des_a, des_w):
     a_max = AccelerationRelationship.getAmax(vmag)
     a_min = -3500
     w_max = SteeringRelationship.getWMax(vmag)
-    coast = 0.0125
+    coast = 0.01182
     u_t = 0.0
     if des_a > 0.0:
         u_t = np.clip(des_a/a_max, coast, 1.0)
@@ -74,6 +78,7 @@ if __name__ == "__main__":
     ks = SteeringRelationship.getKMin(vs)
     ws = SteeringRelationship.getWMax(vs)
     amax = AccelerationRelationship.getAmax(vs)
+    amaxCoeffs = np.polyval(AccelerationRelationship.aCoeffs, AccelerationRelationship.veval)
     plt.plot(vs,ks,'b.')
     plt.legend()
     plt.figure(1)
@@ -81,7 +86,8 @@ if __name__ == "__main__":
     plt.plot(vs, ws, 'b.')
     plt.legend()
     plt.figure(2)
-    plt.plot(AccelerationRelationship.vel, AccelerationRelationship.amax)
+    plt.plot(AccelerationRelationship.vel, AccelerationRelationship.amax, 'b')
+    plt.plot(AccelerationRelationship.veval, amaxCoeffs, 'r')
     plt.plot(vs, amax, 'b.', label = 'amax = h(v)')
     plt.legend()
     plt.show()
