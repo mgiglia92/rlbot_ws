@@ -3,7 +3,7 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist, Vector3
 from geometry_msgs.msg import Quaternion as QMsg
 from rlbot_msgs.msg import RigidBodyTick as RigidBodyTickMsg
-from rlbot_msgs.srv import SetGains
+from rlbot_msgs.srv import SetGains, TwistSetpoint
 import numpy as np
 from pyquaternion import Quaternion
 from simple_controller_pkg.controller_util import get_best_steering_and_throttle, PIDStruct
@@ -14,17 +14,19 @@ parser = argparse.ArgumentParser(
                     description='Controls Rlbot Agent',
                     epilog='No epilog')
 
-parser.add_argument('-v', '--velocity', type=float)
-parser.add_argument('-w', '--angvel', type=float)
-args = parser.parse_args()
+parser.add_argument('-v', '--velocity', type=float, default=1000.0)
+parser.add_argument('-w', '--angvel', type=float, default=2.0)
+
+args, unknown = parser.parse_known_args()
 
 class SimpleController(Node):
     gains = PIDStruct()
-    def __init__(self):
-        super().__init__('simple_controller')
+    def __init__(self, node_name="simple_controller", **kwargs):
+        super().__init__(node_name)
         self.publisher_ = self.create_publisher(Twist, "/cmd_vel", 10)
         self.subscription_ = self.create_subscription(RigidBodyTickMsg, "/player0/RigidBodyTick", self.listener_callback, 10)
-        self.services_ = self.create_service(SetGains, "/simple_controller/set_gains", self.service_callback)
+        self.services_ = [self.create_service(SetGains, "/simple_controller/set_gains", self.service_callback),
+                          self.create_service(TwistSetpoint, "/simple_controller/twist_setpoint", self.setpoint_callback)]
         self.i = 0
         self.subscription_
 
@@ -46,6 +48,13 @@ class SimpleController(Node):
     def service_callback(self, request, response):
         self.gains.set_from_ros_msg(request.gains)
         self.get_logger().info(f"Set gains: {request.gains}")
+        response.success = True
+        return response
+
+    def setpoint_callback(self, request, response: bool):
+        self.des = request.setpoint.linear.x
+        self.des_w = request.setpoint.angular.z
+        self.get_logger().info(f"Set Twist sepoint: {request.setpoint}")
         response.success = True
         return response
 
@@ -72,12 +81,12 @@ class SimpleController(Node):
         twist = Twist()
         twist.linear.x = u_t
         twist.angular.z = u_s
-        self.publisher_.publish(twist)
-        self.get_logger().info(f"err:{err:.2f} des:{self.des:.2f}, v:{vmag:.2f}, desa:{des_a:.2f}, angvel:{msg.bot_state.twist.angular.z:.2f}")
         self.prev_time = tnow
         self.prev_vmag = body_vel
         self.prev_err = err
-    
+        self.publisher_.publish(twist)
+        self.get_logger().info(f"err:{err:.2f} des:{self.des:.2f}, v:{vmag:.2f}, desa:{des_a:.2f}, angvel:{msg.bot_state.twist.angular.z:.2f}")
+        
 
     def norm(self, vec) -> np.array:
         return np.sqrt(vec.x**2 + vec.y**2 + vec.z**2) * np.sign()
