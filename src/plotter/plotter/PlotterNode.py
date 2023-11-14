@@ -1,6 +1,7 @@
 import rclpy
 from rclpy.node import Node
 import matplotlib.pyplot as plt
+
 import numpy as np
 from rlbot_msgs.msg import RigidBodyTick, State, Polynomial3
 from geometry_msgs.msg import Vector3, Twist
@@ -19,8 +20,10 @@ class PhaseSpacePlotterNode(Node):
         
         self.fig0 = plt.figure(0)
         self.fig1 = plt.figure(1)
+        plt.ion()
         self.ax = self.fig0.add_subplot(projection='3d')
-        self.ax1 = self.fig1.add_subplot()
+        self.ax1 = self.fig1.add_subplot(label='xy-pos')
+        self.ax1.set_title("xy-pos")
         self.length = 100
         self.x_history = []
         self.y_history = []
@@ -33,20 +36,30 @@ class PhaseSpacePlotterNode(Node):
         self.xpoly = np.poly1d([0,1,2,3])
         self.ypoly = np.poly1d([0,1,2,3])
         self.tf = 1
+        self.trajectory_artist = None
+        self.history_artist = None
 
     def timer_callback(self):
-        plt.cla()
+        # plt.cla()
+        # if self.history_artist:
+        #     self.history_artist.remove()
+        # if self.trajectory_artist:
+        #     self.trajectory_artist.remove()
+        self.ax.clear()
         self.ax.plot(self.x_history[-100:-1], self.y_history[-100:-1], self.vmag_history[-100:-1],'r.')
 
         self.ax.axes.set_xlim3d(left=-2000, right=2000) 
         self.ax.axes.set_ylim3d(bottom=-2000, top=2000) 
         self.ax.axes.set_zlim3d(bottom=0, top=1400)
 
+        self.ax1.clear()
         teval = np.linspace(0, self.tf, 101)
-        self.ax1.plot(self.xpoly(teval), self.ypoly(teval))
-        self.ax1.axes.set_xlim(0, np.max(self.xpoly(teval)))
-        self.ax1.axes.set_ylim(0, np.max(self.ypoly(teval)))
+        self.trajectory_artist = self.ax1.plot(self.xpoly(teval), self.ypoly(teval))
+        self.ax1.axes.set_xlim(0, np.max(self.xpoly(teval))*1.1)
+        self.ax1.axes.set_ylim(0, np.max(self.ypoly(teval))*1.1)
         plt.draw()
+        # self.fig0.canvas.flush_events()
+        # self.fig1.canvas.flush_events()
         plt.pause(0.001)
     
     def cmdvel_callback(self, msg:Twist):
