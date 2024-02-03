@@ -17,6 +17,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/State.msg"
   "msg/RigidBodyTick.msg"
   "msg/PIDGains.msg"
+  "msg/TrajectoryReference.msg"
+  "msg/ControllerReference.msg"
   "srv/ResetGameState.srv"
   "srv/SetGains.srv"
   "srv/TwistSetpoint.srv"
