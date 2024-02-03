@@ -13,6 +13,7 @@
   <test_depend>python3-pytest</test_depend>
   <build_depend>rlbot_bridge_pkg</build_depend>
   <build_depend>pyquaternion</build_depend>
+  <build_depend>python-transforms3d-pip</build_depend>
   
   <export>
     <build_type>ament_python</build_type>

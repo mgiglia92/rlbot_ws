@@ -1,4 +1,6 @@
 from setuptools import setup
+from glob import glob
+import os
 
 package_name = 'simple_controller_pkg'
 
@@ -20,7 +22,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'SimpleControllerNode = simple_controller_pkg.SimpleControllerNode:main'
+            'SimpleControllerNode = simple_controller_pkg.SimpleControllerNode:main',
+            'ReferenceGeneratorNode = simple_controller_pkg.ReferenceGeneratorNode:main',
+            'StanleyControllerNode = simple_controller_pkg.StanleyControllerNode:main'
         ],
     },
 )
