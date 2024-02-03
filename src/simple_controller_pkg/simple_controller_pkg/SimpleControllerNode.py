@@ -3,48 +3,38 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist, Vector3
 from geometry_msgs.msg import Quaternion as QMsg
 from rlbot_msgs.msg import RigidBodyTick as RigidBodyTickMsg
+from rlbot_msgs.msg import ControllerReference
 from rlbot_msgs.srv import SetGains, TwistSetpoint
 import numpy as np
 from pyquaternion import Quaternion
 from simple_controller_pkg.controller_util import get_best_steering_and_throttle, PIDStruct
 import argparse
 
-parser = argparse.ArgumentParser(
-                    prog='SimplerController',
-                    description='Controls Rlbot Agent',
-                    epilog='No epilog')
+# parser = argparse.ArgumentParser(
+#                     prog='SimplerController',
+#                     description='Controls Rlbot Agent',
+#                     epilog='No epilog')
 
-parser.add_argument('-v', '--velocity', type=float, default=1000.0)
-parser.add_argument('-w', '--angvel', type=float, default=2.0)
+# parser.add_argument('-v', '--velocity', type=float, default=1000.0)
+# parser.add_argument('-w', '--angvel', type=float, default=2.0)
 
-args, unknown = parser.parse_known_args()
+# args, unknown = parser.parse_known_args()
 
 class SimpleController(Node):
     gains = PIDStruct()
     def __init__(self, node_name="simple_controller", **kwargs):
         super().__init__(node_name)
         self.publisher_ = self.create_publisher(Twist, "/cmd_vel", 10)
-        self.subscription_ = self.create_subscription(RigidBodyTickMsg, "/player0/RigidBodyTick", self.listener_callback, 10)
+        self.subscription_ = self.create_subscription(ControllerReference, "/controller_reference", self.listener_callback, 10)
         self.services_ = [self.create_service(SetGains, "/simple_controller/set_gains", self.service_callback),
                           self.create_service(TwistSetpoint, "/simple_controller/twist_setpoint", self.setpoint_callback)]
         self.i = 0
         self.subscription_
 
-        # Control algorithm memory vars for differentail calcs
-        self.prev_time = 0
-        self.prev_vmag = 0
-        self.prev_err = 0
-        self.integrand = 0
-        if args.velocity is not None:
-            self.des = args.velocity
-        else:
-            self.des_w = 0
-        if args.angvel is not None:
-            self.des_w = args.angvel
-        else:
-            self.des_w = 0 
-        self.des_w = args.angvel
-    
+        self.prev_time = 0.0
+        self.integrand = 0.0
+        self.prev_err = 0.0
+
     def service_callback(self, request, response):
         self.gains.set_from_ros_msg(request.gains)
         self.get_logger().info(f"Set gains: {request.gains}")
@@ -62,22 +52,22 @@ class SimpleController(Node):
         # Do nasty controls math all clobbered up 
         tnow = self.get_clock().now().nanoseconds
         dt = tnow - self.prev_time
-        vec = to_numpy(msg.bot_state.twist.linear)
-        q = to_numpy(msg.bot_state.pose.orientation)
+        vec = to_numpy(msg.rbt.bot_state.twist.linear)
+        q = to_numpy(msg.rbt.bot_state.pose.orientation)
         quat = Quaternion(q).unit
         body_vel = quat.inverse.rotate(vec)
         sign = np.sign(np.dot(body_vel, np.array([1,0,0])))
         body_vel = body_vel
-        vmag = msg.bot_state.vmag
+        vmag = msg.rbt.bot_state.vmag
         kp = self.gains.kp
         ki = self.gains.ki
         kd = self.gains.kd
-        err = self.des-vmag
+        err = msg.v_desired - vmag
         self.integrand = np.clip(self.integrand + (err*dt/1e9), -1400, 1400)
 
         des_a = kp*(err) + kd*(err - self.prev_err / (dt/1e9)) + ki*self.integrand
 
-        u_t, u_s = get_best_steering_and_throttle(vmag, des_a, self.des_w)
+        u_t, u_s = get_best_steering_and_throttle(vmag, des_a, msg.w_desired)
         twist = Twist()
         twist.linear.x = u_t
         twist.angular.z = u_s
@@ -85,8 +75,6 @@ class SimpleController(Node):
         self.prev_vmag = body_vel
         self.prev_err = err
         self.publisher_.publish(twist)
-        self.get_logger().info(f"err:{err:.2f} des:{self.des:.2f}, v:{vmag:.2f}, desa:{des_a:.2f}, angvel:{msg.bot_state.twist.angular.z:.2f}")
-        
 
     def norm(self, vec) -> np.array:
         return np.sqrt(vec.x**2 + vec.y**2 + vec.z**2) * np.sign()
