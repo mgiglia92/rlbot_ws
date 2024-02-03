@@ -217,13 +217,13 @@ class MyBot(BaseAgent, AgentLifecycleNode):
             traceback.print_exc()
 
     def get_output(self, packet: GameTickPacket) -> SimpleControllerState:
-        msg = self.populate_rigid_body_tick_message()
+        msg = self.populate_rigid_body_tick_message(packet.game_info.seconds_elapsed)
         if self._pub is not None:
             # self.get_logger().info(f"get_output called")
             self._pub.publish(msg)
         return self.ros_controls
 
-    def populate_rigid_body_tick_message(self):
+    def populate_rigid_body_tick_message(self, time: float):
         gtp = RigidBodyTick()
         gtp = self.get_rigid_body_tick()
         msg = RigidBodyTickMsg()
@@ -250,6 +250,8 @@ class MyBot(BaseAgent, AgentLifecycleNode):
         msg.bot_state.throttle = throttle
         msg.bot_state.steer = steer
         msg.bot_state.vmag = np.linalg.norm([v.x, v.y, v.z])
+
+        msg.time = time
         
         return msg
 
