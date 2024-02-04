@@ -6,7 +6,9 @@ from rlbot_msgs.msg import RigidBodyTick as RigidBodyTickMsg
 from rlbot_msgs.msg import ControllerReference
 from rlbot_msgs.msg import TrajectoryReference
 from rlbot_msgs.srv import SetGains, TwistSetpoint
+from transforms3d.quaternions import rotate_vector
 from transforms3d.euler import quat2euler
+from transforms3d.utils import normalized_vector
 import numpy as np
 from pyquaternion import Quaternion
 from simple_controller_pkg.controller_util import get_best_steering_and_throttle, PIDStruct
@@ -38,13 +40,14 @@ def angle_between(v1, v2):
     """
     v1_u = unit_vector(v1)
     v2_u = unit_vector(v2)
-    return np.arctan2(np.dot(np.cross(v1_u, v2_u), [0,0,1]), np.dot(v1_u, v2_u))
+    return -1*np.arctan2(np.dot(np.cross(v1_u, v2_u), [0,0,1]), np.dot(v1_u, v2_u))
 
 class StanleyControllerNode(Node):
     gains = PIDStruct()
     def __init__(self, node_name="stanley_controller", **kwargs):
         super().__init__(node_name)
         self.publisher_ = self.create_publisher(ControllerReference, "/controller_reference", 10)
+        self.publisher2_ = self.create_publisher(Twist, "/internals_stanley", 10)
         self.subscription_ = self.create_subscription(TrajectoryReference, "/trajectory_reference", self.stanley_callback, 10)
         # self.services_ = [self.create_service(SetGains, "/simple_controller/set_gains", self.service_callback),
         #                   self.create_service(TwistSetpoint, "/simple_controller/twist_setpoint", self.setpoint_callback)]
@@ -85,16 +88,37 @@ class StanleyControllerNode(Node):
         x = msg.rbt.bot_state.pose.position.x
         y = msg.rbt.bot_state.pose.position.y
         o = msg.rbt.bot_state.pose.orientation
-        cte = np.sqrt((msg.xr - x)**2 + (msg.yr - y)**2)
-        r = -1 * quat2euler([o.w, o.x, o.y, o.z])[-1]
-        he = msg.thetar - r
+        quat = np.array([o.w, o.x, o.y, o.z])
+        forward = rotate_vector(np.array([1,0,0]), quat, False)
+        right = rotate_vector(np.array([0,1,0]), quat, False)
+        up = rotate_vector(np.array([0,0,1]), quat, False)
+
+        roll,pitch,yaw = quat2euler([o.w, o.x, o.y, o.z], 'sxyz')
+        vx = msg.vxr
+        vy = msg.vyr
+        heading = np.array([np.cos(yaw), np.sin(yaw), 0])
+        vec_to_path = np.array([msg.xr, msg.yr, 0]) - np.array([x, y, 0])
+        ctvec = (vec_to_path - (np.dot(vec_to_path, normalized_vector(heading))*heading))
+        cte = np.linalg.norm(ctvec)
+        if(np.dot(ctvec, right) < 0):
+            cte = -1*cte
+
+        he = angle_between([vx, vy, 0], [np.cos(yaw), np.sin(yaw), 0])
+        # if(he > np.pi):
+        #     he = he - np.pi
+
+        twist = Twist()
+        twist.angular.x = roll
+        twist.angular.y = pitch
+        twist.angular.z = yaw
 
 
         cr.rbt = msg.rbt
-        cr.v_desired = float(100)
-        cr.w_desired = float(np.clip(he, -5.5, 5.5))
+        cr.v_desired = float(500)
+        cr.w_desired = float(np.clip(5*he + cte, -5.5, 5.5))
         self.publisher_.publish(cr)
-        self.get_logger().info(f"Published: cte:{cte} | he: {he} | angle:{r}")
+        self.publisher2_.publish(twist)
+        self.get_logger().info(f"Published: cte:{cte} | he: {he} | angle:{ctvec}")
 
     def norm(self, vec) -> np.array:
         return np.sqrt(vec.x**2 + vec.y**2 + vec.z**2) * np.sign()

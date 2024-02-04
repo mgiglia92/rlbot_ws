@@ -36,7 +36,7 @@ def angle_between(v1, v2):
     """
     v1_u = unit_vector(v1)
     v2_u = unit_vector(v2)
-    return np.arctan2(np.dot(np.cross(v1_u, v2_u), [0,0,1]), np.dot(v1_u, v2_u))
+    return -1*np.arctan2(np.dot(np.cross(v1_u, v2_u), [0,0,1]), np.dot(v1_u, v2_u))
 
 class ReferenceGeneratorNode(Node):
     gains = PIDStruct()
@@ -69,7 +69,7 @@ class ReferenceGeneratorNode(Node):
     def reference_callback(self, msg: RigidBodyTickMsg):
         # Get time from the message, and get reference state from hard coded trajectory
         time = msg.time
-        f = (1/10)
+        f = (1/20)
         xr = 500*np.cos(2*np.pi*f*time)
         yr = 500*np.sin(2*np.pi*f*time)
         vxr = -2*500*np.pi*f*np.sin(2*np.pi*f*time)
@@ -81,6 +81,8 @@ class ReferenceGeneratorNode(Node):
         trajr.rbt = msg
         trajr.xr = xr
         trajr.yr = yr
+        trajr.vxr = vxr
+        trajr.vyr = vyr
         trajr.thetar = thetar
 
         self.publisher_.publish(trajr)
