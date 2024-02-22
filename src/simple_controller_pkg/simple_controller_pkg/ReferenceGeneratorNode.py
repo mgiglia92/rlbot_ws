@@ -9,6 +9,9 @@ import numpy as np
 from pyquaternion import Quaternion
 from simple_controller_pkg.controller_util import get_best_steering_and_throttle, PIDStruct
 import argparse
+import casadi
+
+
 
 # parser = argparse.ArgumentParser(
 #                     prog='SimplerController',
@@ -38,6 +41,39 @@ def angle_between(v1, v2):
     v2_u = unit_vector(v2)
     return -1*np.arctan2(np.dot(np.cross(v1_u, v2_u), [0,0,1]), np.dot(v1_u, v2_u))
 
+class MinDist:
+    def __init__(self):    
+        #Symbolic expression
+        self.radius = 1000
+        self.xc = casadi.SX.sym('xc')
+        self.x1 = casadi.SX.sym('x1')
+        self.yc = casadi.SX.sym('yc')
+        self.y1 = casadi.SX.sym('y1')
+        self.F = casadi.Function('F', [self.xc], [casadi.sqrt(self.radius**2-self.xc**2)])
+        self.dist = casadi.Function('dist', [self.xc, self.x1, self.yc, self.y1], [casadi.sqrt((self.xc-self.x1)**2 + (self.yc-self.y1)**2)])
+
+        self.opti = casadi.Opti()
+        self.xpos = self.opti.parameter()
+        self.ypos = self.opti.parameter()
+        self.xmin = self.opti.variable(1)
+        self.ymin = self.F(self.xmin)
+        self.opti.set_initial(self.xmin, 0.99)
+        self.opti.subject_to(self.xmin>=-1*(self.radius-1))
+        self.opti.subject_to(self.xmin<=(self.radius-1))
+        self.opti.minimize(self.dist(self.xmin, self.xpos, self.ymin, self.ypos))
+        opts = {'ipopt.print_level': 2, 'print_time': 0, 'ipopt.sb': 'yes'}
+        self.opti.solver('ipopt', opts)
+        self.sol = None
+    
+    def update_position(self, x, y):
+        self.opti.set_value(self.xpos, x)
+        self.opti.set_value(self.ypos, y)
+    
+    def solve(self):
+        self.sol = self.opti.solve()
+        return self.opti.value(self.xmin), self.opti.value(self.ymin)
+        
+
 class ReferenceGeneratorNode(Node):
     gains = PIDStruct()
     def __init__(self, node_name="reference_generator", **kwargs):
@@ -48,6 +84,7 @@ class ReferenceGeneratorNode(Node):
         #                   self.create_service(TwistSetpoint, "/simple_controller/twist_setpoint", self.setpoint_callback)]
         self.i = 0
         # self.subscription_
+        self.min_dist = MinDist()
 
 
     
@@ -76,7 +113,9 @@ class ReferenceGeneratorNode(Node):
         vyr = 2*500*np.pi*f*np.cos(2*np.pi*f*time)
         
         thetar = angle_between([vxr, vyr, 0], [1, 0, 0])
-
+        self.min_dist.update_position(msg.bot_state.pose.position.x, msg.bot_state.pose.position.y)
+        xr, yr = self.min_dist.solve()
+        #TODO: Parametrize the path so that we get a vector indicating direction to replace vxr and vyr
         trajr = TrajectoryReference()
         trajr.rbt = msg
         trajr.xr = xr
