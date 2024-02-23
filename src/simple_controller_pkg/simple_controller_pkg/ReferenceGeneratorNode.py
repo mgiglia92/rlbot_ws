@@ -50,6 +50,7 @@ class MinDist:
         self.yc = casadi.SX.sym('yc')
         self.y1 = casadi.SX.sym('y1')
         self.F = casadi.Function('F', [self.xc], [casadi.sqrt(self.radius**2-self.xc**2)])
+        self.J = self.F.jacobian()
         self.dist = casadi.Function('dist', [self.xc, self.x1, self.yc, self.y1], [casadi.sqrt((self.xc-self.x1)**2 + (self.yc-self.y1)**2)])
 
         self.opti = casadi.Opti()
@@ -105,17 +106,21 @@ class ReferenceGeneratorNode(Node):
     
     def reference_callback(self, msg: RigidBodyTickMsg):
         # Get time from the message, and get reference state from hard coded trajectory
-        time = msg.time
-        f = (1/20)
-        xr = 500*np.cos(2*np.pi*f*time)
-        yr = 500*np.sin(2*np.pi*f*time)
-        vxr = -2*500*np.pi*f*np.sin(2*np.pi*f*time)
-        vyr = 2*500*np.pi*f*np.cos(2*np.pi*f*time)
+        # time = msg.time
+        # f = (1/20)
+        # xr = 500*np.cos(2*np.pi*f*time)
+        # yr = 500*np.sin(2*np.pi*f*time)
+        # vxr = -2*500*np.pi*f*np.sin(2*np.pi*f*time)
+        # vyr = 2*500*np.pi*f*np.cos(2*np.pi*f*time)
         
-        thetar = angle_between([vxr, vyr, 0], [1, 0, 0])
         self.min_dist.update_position(msg.bot_state.pose.position.x, msg.bot_state.pose.position.y)
         xr, yr = self.min_dist.solve()
         #TODO: Parametrize the path so that we get a vector indicating direction to replace vxr and vyr
+        slope = self.min_dist.J(xr, self.min_dist.xc)
+        vxr = float(1)
+        vyr = float(slope)
+        thetar = angle_between([vxr, vyr, 0], [1, 0, 0])
+
         trajr = TrajectoryReference()
         trajr.rbt = msg
         trajr.xr = xr
