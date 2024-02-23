@@ -57,6 +57,8 @@ def get_best_steering_and_throttle(vmag, des_a, des_w):
     #     u_t = np.interp(des_a, [-500,0], [-coast, coast])
     elif des_a <= -500.0:
         u_t = np.clip(-1*des_a/a_min, -1.0, coast)
+    else:
+        u_t = coast
     u_s = np.clip(des_w/w_max, -1.0, 1.0)
     return u_t, u_s
 
