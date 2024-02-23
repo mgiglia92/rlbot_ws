@@ -66,11 +66,12 @@ class SimpleController(Node):
         self.integrand = np.clip(self.integrand + (err*dt/1e9), -1400, 1400)
 
         des_a = kp*(err) + kd*(err - self.prev_err / (dt/1e9)) + ki*self.integrand
-
+        err_s = msg.w_desired - msg.rbt.bot_state.twist.angular.z
+        u_s_fb = err_s * 3
         u_t, u_s = get_best_steering_and_throttle(vmag, des_a, msg.w_desired)
         twist = Twist()
         twist.linear.x = u_t
-        twist.angular.z = u_s
+        twist.angular.z = u_s + u_s_fb
         self.prev_time = tnow
         self.prev_vmag = body_vel
         self.prev_err = err
