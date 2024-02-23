@@ -24,7 +24,8 @@ setup(
         'console_scripts': [
             'SimpleControllerNode = simple_controller_pkg.SimpleControllerNode:main',
             'ReferenceGeneratorNode = simple_controller_pkg.ReferenceGeneratorNode:main',
-            'StanleyControllerNode = simple_controller_pkg.StanleyControllerNode:main'
+            'StanleyControllerNode = simple_controller_pkg.StanleyControllerNode:main',
+            'LatencyTestNode = simple_controller_pkg.LatencyTestNode:main'
         ],
     },
 )
