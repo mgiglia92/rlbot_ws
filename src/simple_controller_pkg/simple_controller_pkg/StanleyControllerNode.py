@@ -114,8 +114,10 @@ class StanleyControllerNode(Node):
 
 
         cr.rbt = msg.rbt
-        cr.v_desired = float(500)
-        cr.w_desired = float(np.clip(5*he + cte, -5.5, 5.5))
+        cr.v_desired = float(1000)
+        cr.w_desired = float(np.clip(he + (2*cte/(0.001 + msg.rbt.bot_state.vmag)), -2.5, 2.5))
+        cr.he = float(he)
+        cr.cte = float(cte)
         self.publisher_.publish(cr)
         self.publisher2_.publish(twist)
         self.get_logger().info(f"Published: cte:{cte} | he: {he} | angle:{ctvec}")
