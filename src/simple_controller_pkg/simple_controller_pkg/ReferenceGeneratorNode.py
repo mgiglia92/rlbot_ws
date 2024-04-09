@@ -106,15 +106,25 @@ class ReferenceGeneratorNode(Node):
     
     def reference_callback(self, msg: RigidBodyTickMsg):
         # Get time from the message, and get reference state from hard coded trajectory
-        # time = msg.time
-        # f = (1/20)
+        time = msg.time
+        f = (1/20)
+# HARDCODED REF TRAJECTORY (WRT TIME)
         # xr = 500*np.cos(2*np.pi*f*time)
         # yr = 500*np.sin(2*np.pi*f*time)
         # vxr = -2*500*np.pi*f*np.sin(2*np.pi*f*time)
         # vyr = 2*500*np.pi*f*np.cos(2*np.pi*f*time)
-        
+        # thetar = angle_between([vxr, vyr, 0], [1, 0, 0])
+
         self.min_dist.update_position(msg.bot_state.pose.position.x, msg.bot_state.pose.position.y)
         xr, yr = self.min_dist.solve()
+        
+        R = np.array(([np.cos(np.pi/2), -1*np.sin(np.pi/2)],[np.sin(np.pi/2), np.cos(np.pi/2)]))
+        v = np.array([xr,yr])
+        vec = np.dot(R,v)
+        vec=np.append(vec, [0], axis=0)
+        thetar = angle_between(vec, [1, 0, 0])
+        vxr=vec[0]
+        vyr=vec[1]
         #TODO: Parametrize the path so that we get a vector indicating direction to replace vxr and vyr
         slope = self.min_dist.J(xr, self.min_dist.xc)
         vxr = float(1)

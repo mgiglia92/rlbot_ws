@@ -88,6 +88,7 @@ class StanleyControllerNode(Node):
         x = msg.rbt.bot_state.pose.position.x
         y = msg.rbt.bot_state.pose.position.y
         o = msg.rbt.bot_state.pose.orientation
+        vmag = msg.rbt.bot_state.vmag
         quat = np.array([o.w, o.x, o.y, o.z])
         forward = rotate_vector(np.array([1,0,0]), quat, False)
         right = rotate_vector(np.array([0,1,0]), quat, False)
@@ -96,6 +97,7 @@ class StanleyControllerNode(Node):
         roll,pitch,yaw = quat2euler([o.w, o.x, o.y, o.z], 'sxyz')
         vx = msg.vxr
         vy = msg.vyr
+        yaw_desired = msg.thetar
         heading = np.array([np.cos(yaw), np.sin(yaw), 0])
         vec_to_path = np.array([msg.xr, msg.yr, 0]) - np.array([x, y, 0])
         ctvec = (vec_to_path - (np.dot(vec_to_path, normalized_vector(heading))*heading))
@@ -103,7 +105,8 @@ class StanleyControllerNode(Node):
         if(np.dot(ctvec, right) < 0):
             cte = -1*cte
 
-        he = angle_between([vx, vy, 0], [np.cos(yaw), np.sin(yaw), 0])
+        # he = angle_between([vx, vy, 0], [np.cos(yaw), np.sin(yaw), 0])
+        he = yaw_desired-yaw
         # if(he > np.pi):
         #     he = he - np.pi
 
@@ -115,9 +118,7 @@ class StanleyControllerNode(Node):
 
         cr.rbt = msg.rbt
         cr.v_desired = float(1000)
-        cr.w_desired = float(np.clip(he + (2*cte/(0.001 + msg.rbt.bot_state.vmag)), -2.5, 2.5))
-        cr.he = float(he)
-        cr.cte = float(cte)
+        cr.w_desired = float(np.clip(he+np.arctan2(5*cte,(0.01+vmag)), -5.5, 5.5))
         self.publisher_.publish(cr)
         self.publisher2_.publish(twist)
         self.get_logger().info(f"Published: cte:{cte} | he: {he} | angle:{ctvec}")
