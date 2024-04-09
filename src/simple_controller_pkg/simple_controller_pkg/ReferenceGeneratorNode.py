@@ -10,6 +10,7 @@ from pyquaternion import Quaternion
 from simple_controller_pkg.controller_util import get_best_steering_and_throttle, PIDStruct
 import argparse
 import casadi
+from transforms3d.quaternions import qnorm, rotate_vector
 
 
 
@@ -115,21 +116,30 @@ class ReferenceGeneratorNode(Node):
         # vyr = 2*500*np.pi*f*np.cos(2*np.pi*f*time)
         # thetar = angle_between([vxr, vyr, 0], [1, 0, 0])
 
+        # Sanitize Heading input
+        q = msg.bot_state.pose.orientation
+        quat = np.array([q.w,q.x,q.y,q.z])
+        x = np.array([1,0,0])
+        hvec = rotate_vector(x,quat)
+        hvec[2]=0.0
+        angle = angle_between(hvec,x)
+
         self.min_dist.update_position(msg.bot_state.pose.position.x, msg.bot_state.pose.position.y)
         xr, yr = self.min_dist.solve()
-        
-        R = np.array(([np.cos(np.pi/2), -1*np.sin(np.pi/2)],[np.sin(np.pi/2), np.cos(np.pi/2)]))
+        rot_angle = 90
+        R = np.array(([np.cos(rot_angle), -1*np.sin(rot_angle)],[np.sin(rot_angle), np.cos(rot_angle)]))
         v = np.array([xr,yr])
         vec = np.dot(R,v)
         vec=np.append(vec, [0], axis=0)
-        thetar = angle_between(vec, [1, 0, 0])
+        thetar = angle_between(vec/np.linalg.norm(vec),hvec)
         vxr=vec[0]
         vyr=vec[1]
+
         #TODO: Parametrize the path so that we get a vector indicating direction to replace vxr and vyr
-        slope = self.min_dist.J(xr, self.min_dist.xc)
-        vxr = float(1)
-        vyr = float(slope)
-        thetar = angle_between([vxr, vyr, 0], [1, 0, 0])
+        # slope = self.min_dist.J(xr, self.min_dist.xc)
+        # vxr = float(1)
+        # vyr = float(slope)
+        # thetar = angle_between([vxr, vyr, 0], [1, 0, 0])
 
         trajr = TrajectoryReference()
         trajr.rbt = msg
@@ -163,7 +173,7 @@ def main(args=None):
     rclpy.spin(controller)
 
     # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
+    # (optional - otherwise it will be done automatically 
     # when the garbage collector destroys the node object)
     controller.destroy_node()
     rclpy.shutdown()

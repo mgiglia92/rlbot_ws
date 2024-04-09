@@ -85,8 +85,8 @@ class StanleyControllerNode(Node):
     def stanley_callback(self, msg: TrajectoryReference):
         
         cr = ControllerReference()
-        x = msg.rbt.bot_state.pose.position.x
-        y = msg.rbt.bot_state.pose.position.y
+        xp = msg.rbt.bot_state.pose.position.x
+        yp = msg.rbt.bot_state.pose.position.y
         o = msg.rbt.bot_state.pose.orientation
         vmag = msg.rbt.bot_state.vmag
         quat = np.array([o.w, o.x, o.y, o.z])
@@ -94,12 +94,20 @@ class StanleyControllerNode(Node):
         right = rotate_vector(np.array([0,1,0]), quat, False)
         up = rotate_vector(np.array([0,0,1]), quat, False)
 
-        roll,pitch,yaw = quat2euler([o.w, o.x, o.y, o.z], 'sxyz')
+        # Sanitize Heading input
+        q = msg.rbt.bot_state.pose.orientation
+        quat = np.array([q.w,q.x,q.y,q.z])
+        x = np.array([1,0,0])
+        hvec = rotate_vector(x,quat)
+        hvec[2]=0.0
+        yaw = angle_between(hvec,x)
+
+        # roll,pitch,yaw = quat2euler([o.w, o.x, o.y, o.z], 'sxyz')
         vx = msg.vxr
         vy = msg.vyr
         yaw_desired = msg.thetar
         heading = np.array([np.cos(yaw), np.sin(yaw), 0])
-        vec_to_path = np.array([msg.xr, msg.yr, 0]) - np.array([x, y, 0])
+        vec_to_path = np.array([msg.xr, msg.yr, 0]) - np.array([xp, yp, 0])
         ctvec = (vec_to_path - (np.dot(vec_to_path, normalized_vector(heading))*heading))
         cte = np.linalg.norm(ctvec)
         if(np.dot(ctvec, right) < 0):
@@ -111,14 +119,17 @@ class StanleyControllerNode(Node):
         #     he = he - np.pi
 
         twist = Twist()
-        twist.angular.x = roll
-        twist.angular.y = pitch
+        twist.angular.x = he
+        twist.angular.y = cte
         twist.angular.z = yaw
 
 
         cr.rbt = msg.rbt
+        cr.he = he
+        cr.cte = cte
         cr.v_desired = float(1000)
-        cr.w_desired = float(np.clip(he+np.arctan2(5*cte,(0.01+vmag)), -5.5, 5.5))
+        # cr.w_desired = float(np.clip(he+np.arctan2((0.001+vmag), 1*cte), -5.5, 5.5))
+        cr.w_desired = float(np.clip(he, -5.5, 5.5))
         self.publisher_.publish(cr)
         self.publisher2_.publish(twist)
         self.get_logger().info(f"Published: cte:{cte} | he: {he} | angle:{ctvec}")

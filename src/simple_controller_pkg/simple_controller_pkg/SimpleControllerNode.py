@@ -71,7 +71,7 @@ class SimpleController(Node):
         u_t, u_s = get_best_steering_and_throttle(vmag, des_a, msg.w_desired)
         twist = Twist()
         twist.linear.x = u_t
-        twist.angular.z = u_s + u_s_fb
+        twist.angular.z = u_s
         self.prev_time = tnow
         self.prev_vmag = body_vel
         self.prev_err = err
