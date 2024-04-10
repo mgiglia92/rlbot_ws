@@ -6,3 +6,6 @@
 
 # ros2 service cmd line
 ros2 service call /simple_controller/twist_setpoint rlbot_msgs/srv/TwistSetpoint '{setpoint: {linear: {x: 100, y: 0, z: 0}, angular: {z: 1}}}'
+
+# vscode, terminal debug stuff
+I added source full_setup.sh to my .bashrc so that my terminal always have venv activated and some env vars setpoint
