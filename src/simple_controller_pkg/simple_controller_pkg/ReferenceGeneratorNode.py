@@ -45,7 +45,7 @@ def angle_between(v1, v2):
 class MinDist:
     def __init__(self):    
         #Symbolic expression
-        self.radius = 1000
+        self.radius = 3000
         self.xc = casadi.SX.sym('xc')
         self.x1 = casadi.SX.sym('x1')
         self.yc = casadi.SX.sym('yc')
@@ -127,7 +127,8 @@ class ReferenceGeneratorNode(Node):
         self.min_dist.update_position(msg.bot_state.pose.position.x, msg.bot_state.pose.position.y)
         xr, yr = self.min_dist.solve()
         rot_angle = np.pi/2
-        R = np.array(([np.cos(rot_angle), -1*np.sin(rot_angle)],[np.sin(rot_angle), np.cos(rot_angle)]))
+        R = np.array(([np.cos(rot_angle), -1*np.sin(rot_angle)],
+                      [np.sin(rot_angle), np.cos(rot_angle)]))
         position = np.array([xr,yr])
         vel = np.dot(R, position)
         vel=np.append(vel, [0], axis=0)

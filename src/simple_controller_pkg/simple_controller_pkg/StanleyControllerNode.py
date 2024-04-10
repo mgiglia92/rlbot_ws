@@ -118,12 +118,12 @@ class StanleyControllerNode(Node):
         cte = np.linalg.norm(vec_to_path_world)
         trajectory_velocity = np.array([msg.vxr, msg.vyr, 0])
 
-        if(angle_between(unit_vector(vel), unit_vector(vec_to_path_world)) < 0):
+        if(angle_between(unit_vector(vel), unit_vector(vec_to_path_world)) > 0):
             cte = -1*cte
 
         # he = angle_between([vx, vy, 0], [np.cos(yaw), np.sin(yaw), 0])
         # he = yaw_desired-yaw
-        he = angle_between(unit_vector(vel), unit_vector(trajectory_velocity))
+        he = angle_between(unit_vector(trajectory_velocity), unit_vector(vel))
         # if(he > np.pi):
         #     he = he - np.pi
 
@@ -138,7 +138,7 @@ class StanleyControllerNode(Node):
         cr.rbt = msg.rbt
         cr.he = he
         cr.cte = cte
-        cr.correction = he# np.arctan2(cte, (0.001+vmag))
+        cr.correction = 2*he + np.arctan2(3*cte, (0.001+vmag))
         cr.v_desired = float(300)
         cr.w_desired = float(np.clip(cte, -1,1))
         # cr.w_desired = float(np.clip(he, -5.5, 5.5))
