@@ -17,8 +17,8 @@ class MinimalClientAsync(Node):
         # Hard coded reset state
         self.req.rigid_body_tick.ball_state.pose.position.x = 1000.0
         self.req.rigid_body_tick.ball_state.pose.position.z = 1000.0
-        self.req.rigid_body_tick.bot_state.pose.position.x = 1000.
-        self.req.rigid_body_tick.bot_state.pose.position.y = -500.
+        self.req.rigid_body_tick.bot_state.pose.position.x = 900.
+        self.req.rigid_body_tick.bot_state.pose.position.y = 50.
 
     def send_request(self):
         self.future = self.cli.call_async(self.req)
@@ -35,7 +35,7 @@ def main(args=None):
         response = minimal_client.send_request()
         minimal_client.get_logger().info(
         f"success: {response.success}")
-        time.sleep(5)
+        time.sleep(15)
     minimal_client.destroy_node()
     rclpy.shutdown()
 
