@@ -70,7 +70,10 @@ class SimpleController(Node):
         err_s = msg.w_desired - msg.rbt.bot_state.twist.angular.z
         u_s_fb = err_s * 3
         u_t, u_s = get_best_steering_and_throttle(vmag, des_a, msg.w_desired)
-        u_s = msg.correction
+
+# IGNORE THE "BEST" STEERING AND USE STANLEY CORRECTION DIRECTLY
+        # u_s = msg.correction
+
         twist = Twist()
         twist.linear.x = u_t
         twist.angular.z = u_s
