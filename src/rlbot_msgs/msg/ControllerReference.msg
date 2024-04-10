@@ -1,5 +1,12 @@
 RigidBodyTick rbt
 float64 v_desired
 float64 w_desired
+float64 a_desired
 float64 he
 float64 cte
+float64 u_s
+float64 u_t
+float64 vmag
+float64 correction
+float64 headingx
+float64 headingy
