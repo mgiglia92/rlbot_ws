@@ -117,23 +117,23 @@ class ReferenceGeneratorNode(Node):
         # thetar = angle_between([vxr, vyr, 0], [1, 0, 0])
 
         # Sanitize Heading input
-        q = msg.bot_state.pose.orientation
-        quat = np.array([q.w,q.x,q.y,q.z])
-        x = np.array([1,0,0])
-        hvec = rotate_vector(x,quat)
-        hvec[2]=0.0
-        angle = angle_between(hvec,x)
+        # q = msg.bot_state.pose.orientation
+        # quat = np.array([q.w,q.x,q.y,q.z])
+        # x = np.array([1,0,0])
+        # hvec = rotate_vector(x,quat)
+        # hvec[2]=0.0
+        # angle = angle_between(hvec,x)
 
         self.min_dist.update_position(msg.bot_state.pose.position.x, msg.bot_state.pose.position.y)
         xr, yr = self.min_dist.solve()
-        rot_angle = 90
+        rot_angle = np.pi/2
         R = np.array(([np.cos(rot_angle), -1*np.sin(rot_angle)],[np.sin(rot_angle), np.cos(rot_angle)]))
-        v = np.array([xr,yr])
-        vec = np.dot(R,v)
-        vec=np.append(vec, [0], axis=0)
-        thetar = angle_between(vec/np.linalg.norm(vec),hvec)
-        vxr=vec[0]
-        vyr=vec[1]
+        position = np.array([xr,yr])
+        vel = np.dot(R, position)
+        vel=np.append(vel, [0], axis=0)
+        # thetar = angle_between(hvec, vel/np.linalg.norm(vel))
+        vxr=vel[0]
+        vyr=vel[1]
 
         #TODO: Parametrize the path so that we get a vector indicating direction to replace vxr and vyr
         # slope = self.min_dist.J(xr, self.min_dist.xc)
@@ -147,7 +147,7 @@ class ReferenceGeneratorNode(Node):
         trajr.yr = yr
         trajr.vxr = vxr
         trajr.vyr = vyr
-        trajr.thetar = thetar
+        trajr.thetar = 0.0
 
         self.publisher_.publish(trajr)
         # self.get_logger().info(f"Published: {trajr}")

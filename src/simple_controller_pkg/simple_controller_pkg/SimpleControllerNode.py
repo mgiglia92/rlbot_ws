@@ -25,6 +25,7 @@ class SimpleController(Node):
     def __init__(self, node_name="simple_controller", **kwargs):
         super().__init__(node_name)
         self.publisher_ = self.create_publisher(Twist, "/cmd_vel", 10)
+        self.internals_publisher_ = self.create_publisher(ControllerReference, f"/{self.get_name()}/internals", 10)
         self.subscription_ = self.create_subscription(ControllerReference, "/controller_reference", self.listener_callback, 10)
         self.services_ = [self.create_service(SetGains, "/simple_controller/set_gains", self.service_callback),
                           self.create_service(TwistSetpoint, "/simple_controller/twist_setpoint", self.setpoint_callback)]
@@ -69,13 +70,27 @@ class SimpleController(Node):
         err_s = msg.w_desired - msg.rbt.bot_state.twist.angular.z
         u_s_fb = err_s * 3
         u_t, u_s = get_best_steering_and_throttle(vmag, des_a, msg.w_desired)
+        u_s = msg.correction
         twist = Twist()
         twist.linear.x = u_t
         twist.angular.z = u_s
         self.prev_time = tnow
         self.prev_vmag = body_vel
         self.prev_err = err
+
+        cr = ControllerReference()
+        cr.u_s = u_s
+        cr.u_t = u_t
+        cr.a_desired = des_a
+        cr.w_desired = msg.w_desired
+        cr.v_desired = msg.v_desired
+        cr.vmag = vmag
+        cr.he = msg.he
+        cr.cte = msg.cte
+        cr.rbt = msg.rbt
+
         self.publisher_.publish(twist)
+        self.internals_publisher_.publish(cr)
 
     def norm(self, vec) -> np.array:
         return np.sqrt(vec.x**2 + vec.y**2 + vec.z**2) * np.sign()
