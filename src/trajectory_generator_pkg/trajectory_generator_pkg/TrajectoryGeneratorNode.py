@@ -1,27 +1,49 @@
 import rclpy
 from rclpy.node import Node
-from trajectory_generator_pkg.sample_trajectory_generator import *
+from trajectory_generator_pkg.sample_trajectory_generator import TrajectoryOpti, ActiveTraits
 from scipy.interpolate import CubicSpline, PPoly
 import matplotlib.pyplot as plt
-from rlbot_msgs.msg import Polynomial3
+from rlbot_msgs.msg import Polynomial3, RigidBodyTick
+from geometry_msgs.msg import PoseArray, Pose
+from std_msgs.msg import Float32MultiArray, Float32
+from random import random
+import numpy as np
 
 class TrajectoryGenerator(Node):
     def __init__(self, IC=ActiveTraits(), FC=ActiveTraits()):
         super().__init__('trajectory_generator_node')
         # Topic stuff
         self.publisher_ = self.create_publisher(Polynomial3, '/current_trajectory', 10)
+        self.internals_publisher_ = self.create_publisher(Float32MultiArray, '/trajectory_internals', 10)
+        self.subscription_ = self.create_subscription(RigidBodyTick, "/player0/RigidBodyTick", self.update_bot_data, 10) 
         
         # Optimizer stuff
         self.optimizer = TrajectoryOpti()
+        self.bot_rbt = RigidBodyTick()
         self.sol = None
         self.current_trajectory = CubicSpline([0,1,2,3], [1,2,3,4])
-        self.init_optimizer(IC,FC)
+        # self.publish_trajectory(IC,FC)
+        self.init_optimizer()
         #TODO: Change callback to not take args, use class vars instead
-        self.timer = self.create_timer(1, self.init_optimizer)
+        self.timer = self.create_timer(10, self.init_optimizer)
         # Service stuff
 
+    def update_bot_data(self, msg: RigidBodyTick):
+        self.bot_rbt = msg
+    
+    def init_optimizer(self):
+        pos = self.bot_rbt.bot_state.pose.position
+        vel = self.bot_rbt.bot_state.twist.linear
+        vmag = self.bot_rbt.bot_state.vmag
+        yaw = 0.0 # TODO: Need to get yaw from quaternion
+        omega = self.bot_rbt.bot_state.twist.angular
+        ball_pos = self.bot_rbt.ball_state.pose.position
+        
+        IC = ActiveTraits([1,1,1,1,1,1,1], [pos.x, pos.y, vel.x, vel.y, yaw, omega.z, vmag])
+        FC = ActiveTraits([1,1,0,0,0,0,0], [(1+random())*1000, ball_pos.y, 0,0,0,0, 0])
+        self.publish_trajectory(IC, FC)
 
-    def init_optimizer(self, \
+    def publish_trajectory(self, \
                         IC = ActiveTraits([1,1,1,1,1,1,1],[0, 0, 0, 0, 1.5, 0,0]),\
                         FC = ActiveTraits([1,1,0,0,1 ,0,0], [1000, 1000, 0, 0, 1.5, 0, 0])):
         self.sol = self.optimizer.reset_optimizer(IC, FC)
@@ -58,7 +80,21 @@ class TrajectoryGenerator(Node):
         self.get_logger().info(f"Publish Polynomial: {msg}")
 
         self.publisher_.publish(msg)
-        
+        internals = PoseArray()
+        xi=Float32MultiArray()
+        poses=[]
+        xs =[]
+        for i,j,k in zip(x,y,theta):
+            p=Pose()
+            p.position.y=j
+            p.orientation.z=k
+            poses.append(p)
+            xs.append(float(i))
+        xi.data=xs
+        internals.poses = poses
+        # yi=Float32MultiArray()
+        # yi.data=y
+        self.internals_publisher_.publish(xi)
 
 def main(args=None):
     rclpy.init(args=args)
