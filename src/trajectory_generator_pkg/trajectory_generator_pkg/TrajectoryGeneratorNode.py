@@ -3,7 +3,7 @@ from rclpy.node import Node
 from trajectory_generator_pkg.sample_trajectory_generator import TrajectoryOpti, ActiveTraits
 from scipy.interpolate import CubicSpline, PPoly
 import matplotlib.pyplot as plt
-from rlbot_msgs.msg import Polynomial3, RigidBodyTick
+from rlbot_msgs.msg import Polynomial3, RigidBodyTick, DiscretizedTrajectoryReference
 from geometry_msgs.msg import PoseArray, Pose
 from std_msgs.msg import Float32MultiArray, Float32
 from random import random
@@ -13,7 +13,7 @@ class TrajectoryGenerator(Node):
     def __init__(self, IC=ActiveTraits(), FC=ActiveTraits()):
         super().__init__('trajectory_generator_node')
         # Topic stuff
-        self.publisher_ = self.create_publisher(Polynomial3, '/current_trajectory', 10)
+        self.publisher_ = self.create_publisher(DiscretizedTrajectoryReference, '/current_trajectory', 10)
         self.internals_publisher_ = self.create_publisher(Float32MultiArray, '/trajectory_internals', 10)
         self.subscription_ = self.create_subscription(RigidBodyTick, "/player0/RigidBodyTick", self.update_bot_data, 10) 
         
@@ -23,7 +23,7 @@ class TrajectoryGenerator(Node):
         self.sol = None
         self.current_trajectory = CubicSpline([0,1,2,3], [1,2,3,4])
         # self.publish_trajectory(IC,FC)
-        self.init_optimizer()
+        # self.init_optimizer()
         #TODO: Change callback to not take args, use class vars instead
         self.timer = self.create_timer(10, self.init_optimizer)
         # Service stuff
@@ -72,12 +72,18 @@ class TrajectoryGenerator(Node):
         # plt.show(block=False)
         # plt.pause(0.01)
 
-        msg = Polynomial3()
-        msg.px = z[:,0].astype(np.float32)
-        msg.py = z[:,1].astype(np.float32)
-        msg.deg = 3
-        msg.tf = tf
-        self.get_logger().info(f"Publish Polynomial: {msg}")
+        msg = DiscretizedTrajectoryReference()
+        msg.x              = x.tolist()
+        msg.y              = y.tolist()
+        msg.xdot           = xdot.tolist()
+        msg.ydot           = ydot.tolist()
+        msg.theta          = theta.tolist()
+        msg.thetadot       = thetadot.tolist()
+        msg.vmag           = sol.value(self.optimizer.X[-1,:]).tolist()
+        msg.acceleration   = throttle.tolist()
+        msg.steer          = steer.tolist()
+        msg.tf             = tf
+        self.get_logger().info(f"Publish DiscretizedTrajectoryReference: {msg}")
 
         self.publisher_.publish(msg)
         internals = PoseArray()
