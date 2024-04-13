@@ -65,7 +65,7 @@ class TrajectoryOpti(Opti):
                         x[6]*sin(x[4]+x[5]),     #ydot
                         x[6]*cos(x[4]),     #xddot
                         x[6]*sin(x[4]),     #yddot
-                        u[1]*x[6]*0.01,               #thetadot
+                        u[1],               #thetadot
                         0,                  #theatddot
                         u[0])               #vmagdot
     # Numerically evaluate xdot
@@ -106,6 +106,7 @@ class TrajectoryOpti(Opti):
         # self.subject_to(self.X[])
         # self.subject_to(self.X[2,-1]*sin(-1*self.X[4,-1]) + self.X[3,-1]*cos(-1*self.X[4,-1]) == 0)
         # self.subject_to(self.U[1,:] == self.X[5,:d-1])
+        self.subject_to(self.bounded(-1, self.X[5,:], 1))
         
     def set_objectives(self):
         self.minimize(self.T)
@@ -134,7 +135,7 @@ class TrajectoryOpti(Opti):
         pass
 
     def reset_optimizer(self, IC, FC):
-        self.set_vars(7,2,21)
+        self.set_vars(7,2,101) # Set the imporant vars
         self.subject_to() # Reset constraints
         self.set_constraints()
         self.set_initialization_finalization_constraints(IC, FC)
@@ -155,7 +156,7 @@ class TrajectoryOpti(Opti):
 opti = TrajectoryOpti()
 # opti.testrk4()
 IC = ActiveTraits([1,1,1,1,1,1,1],[0, 0, 0, 0, 0, 0,1000])
-FC = ActiveTraits([1,1,0,0,1 ,0,1], [0, 2000, 0, 0, 0, 0, 100])
+FC = ActiveTraits([1,1,0,0,1,0,1], [0, 2000, 0, 0, 0, 0, 2000])
 sol = opti.reset_optimizer(IC, FC)
 
 # IC = ActiveTraits([1,1,1,1,1,1,1],[0, 0, 0,0,1.5,0,0])
@@ -188,8 +189,8 @@ for i in range(len(x)):
         else:
             plt.quiver(x[i],y[i],throttle[i]*np.cos(theta[i])/1400, throttle[i]*np.sin(theta[i])/1400, angles='xy', scale_units='xy', color='blue')
 
-plt.ylim(-100,2000)
-plt.xlim(-100,2000)
+plt.ylim(-200,2200)
+plt.xlim(-1000,1000)
 plt.legend()
 plt.figure(2)
 plt.plot(t[:-1], throttle/1400, 'r-', label='throttle')
