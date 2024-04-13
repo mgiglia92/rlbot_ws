@@ -4,7 +4,7 @@ from geometry_msgs.msg import Twist, Vector3
 from geometry_msgs.msg import Quaternion as QMsg
 from rlbot_msgs.msg import RigidBodyTick as RigidBodyTickMsg
 from rlbot_msgs.msg import ControllerReference
-from rlbot_msgs.msg import TrajectoryReference
+from rlbot_msgs.msg import DiscretizedTrajectoryReference
 from rlbot_msgs.srv import SetGains, TwistSetpoint
 from transforms3d.quaternions import rotate_vector
 from transforms3d.euler import quat2euler
@@ -49,7 +49,7 @@ class StanleyControllerNode(Node):
         super().__init__(node_name)
         self.publisher_ = self.create_publisher(ControllerReference, "/controller_reference", 10)
         self.publisher2_ = self.create_publisher(Twist, "/internals_stanley", 10)
-        self.subscription_ = self.create_subscription(TrajectoryReference, "/trajectory_reference", self.stanley_callback, 10)
+        self.subscription_ = self.create_subscription(DiscretizedTrajectoryReference, "/trajectory_reference", self.stanley_callback, 10)
         # self.services_ = [self.create_service(SetGains, "/simple_controller/set_gains", self.service_callback),
         #                   self.create_service(TwistSetpoint, "/simple_controller/twist_setpoint", self.setpoint_callback)]
         self.i = 0
@@ -83,7 +83,7 @@ class StanleyControllerNode(Node):
     #     response.success = True
     #     return response
 
-    def stanley_callback(self, msg: TrajectoryReference):
+    def stanley_callback(self, msg: DiscretizedTrajectoryReference):
         
         cr = ControllerReference()
         xp = msg.rbt.bot_state.pose.position.x
