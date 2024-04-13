@@ -18,13 +18,14 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/RigidBodyTick.msg"
   "msg/PIDGains.msg"
   "msg/TrajectoryReference.msg"
+  "msg/DiscretizedTrajectoryReference.msg"
   "msg/ControllerReference.msg"
   "srv/ResetGameState.srv"
   "srv/SetGains.srv"
   "srv/TwistSetpoint.srv"
   "msg/Polynomial3.msg"
   "action/ControlVelocity.action"
-  DEPENDENCIES geometry_msgs
+  DEPENDENCIES geometry_msgs std_msgs
  )
 
 ament_export_dependencies(rosidl_default_runtime)

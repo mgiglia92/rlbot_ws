@@ -1,0 +1,9 @@
+RigidBodyTick reference_game_state
+std_msgs/Float32MultiArray xr
+std_msgs/Float32MultiArray yr
+std_msgs/Float32MultiArray vxr
+std_msgs/Float32MultiArray vyr
+std_msgs/Float32MultiArray vmag
+std_msgs/Float32MultiArray acceleration
+std_msgs/Float32MultiArray steer
+float64 tf
