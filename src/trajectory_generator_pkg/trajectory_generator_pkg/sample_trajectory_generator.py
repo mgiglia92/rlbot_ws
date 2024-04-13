@@ -1,6 +1,7 @@
 from casadi import *
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.interpolate import CubicSpline, PPoly
 
 class ActiveTraits:
     #TODO: Make default values work for any sizes
@@ -152,74 +153,80 @@ class TrajectoryOpti(Opti):
         # self.solver("ipopt")
         self.sol = self.solve()
         return self.sol
+    
+def main():
+    opti = TrajectoryOpti()
+    # opti.testrk4()
+    IC = ActiveTraits([1,1,1,1,1,1,1],[0, 0, 0, 0, 0, 0,1000])
+    FC = ActiveTraits([1,1,0,0,1,0,1], [0, 2000, 0, 0, 0, 0, 2000])
+    sol = opti.reset_optimizer(IC, FC)
 
-opti = TrajectoryOpti()
-# opti.testrk4()
-IC = ActiveTraits([1,1,1,1,1,1,1],[0, 0, 0, 0, 0, 0,1000])
-FC = ActiveTraits([1,1,0,0,1,0,1], [0, 2000, 0, 0, 0, 0, 2000])
-sol = opti.reset_optimizer(IC, FC)
+    # IC = ActiveTraits([1,1,1,1,1,1,1],[0, 0, 0,0,1.5,0,0])
+    # FC = ActiveTraits([1,1,0,0,1,0,0], [2000, 1000, 0, 0, 0, 0, 0])
+    # sol = opti.reset_optimizer(IC, FC)
 
-# IC = ActiveTraits([1,1,1,1,1,1,1],[0, 0, 0,0,1.5,0,0])
-# FC = ActiveTraits([1,1,0,0,1,0,0], [2000, 1000, 0, 0, 0, 0, 0])
-# sol = opti.reset_optimizer(IC, FC)
+    sol.value(opti.X)
+    tf = sol.value(opti.T)
+    t = np.linspace(0,tf, opti.N+1)
+    x = sol.value(opti.X[0,:])
+    y = sol.value(opti.X[1,:])
+    xdot = sol.value(opti.X[2,:])
+    ydot = sol.value(opti.X[3,:])
+    theta = sol.value(opti.X[4,:])
+    thetadot = sol.value(opti.X[5,:])
+    v = sol.value(opti.X[6,:])
+    vcalc = np.sqrt(xdot**2 + ydot**2)
+    throttle = sol.value(opti.U[0,:])
+    steer = sol.value(opti.U[1,:])
 
-sol.value(opti.X)
-tf = sol.value(opti.T)
-t = np.linspace(0,tf, opti.N+1)
-x = sol.value(opti.X[0,:])
-y = sol.value(opti.X[1,:])
-xdot = sol.value(opti.X[2,:])
-ydot = sol.value(opti.X[3,:])
-theta = sol.value(opti.X[4,:])
-thetadot = sol.value(opti.X[5,:])
-v = sol.value(opti.X[6,:])
-vcalc = np.sqrt(xdot**2 + ydot**2)
-throttle = sol.value(opti.U[0,:])
-steer = sol.value(opti.U[1,:])
+    plt.figure(1)
 
-plt.figure(1)
+    plt.plot(x,y, 'r.', label="pos")
+    for i in range(len(x)): 
+        # plt.quiver(x[i],y[i],xdot[i],ydot[i], angles='xy', color='g')
+        plt.quiver(x[i],y[i], np.cos(theta[i]), np.sin(theta[i]), angles='xy', scale_units='xy', color='black')
+        if(i<len(throttle)):
+            if(throttle[i] >=0):
+                plt.quiver(x[i],y[i],throttle[i]*np.cos(theta[i])/1400, throttle[i]*np.sin(theta[i])/1400, angles='xy', scale_units='xy', color='red')
+            else:
+                plt.quiver(x[i],y[i],throttle[i]*np.cos(theta[i])/1400, throttle[i]*np.sin(theta[i])/1400, angles='xy', scale_units='xy', color='blue')
 
-plt.plot(x,y, 'r.', label="pos")
-for i in range(len(x)): 
-    # plt.quiver(x[i],y[i],xdot[i],ydot[i], angles='xy', color='g')
-    plt.quiver(x[i],y[i], np.cos(theta[i]), np.sin(theta[i]), angles='xy', scale_units='xy', color='black')
-    if(i<len(throttle)):
-        if(throttle[i] >=0):
-            plt.quiver(x[i],y[i],throttle[i]*np.cos(theta[i])/1400, throttle[i]*np.sin(theta[i])/1400, angles='xy', scale_units='xy', color='red')
-        else:
-            plt.quiver(x[i],y[i],throttle[i]*np.cos(theta[i])/1400, throttle[i]*np.sin(theta[i])/1400, angles='xy', scale_units='xy', color='blue')
-
-plt.ylim(-200,2200)
-plt.xlim(-1000,1000)
-plt.legend()
-plt.figure(2)
-plt.plot(t[:-1], throttle/1400, 'r-', label='throttle')
-plt.plot(t[:-1], steer, 'b', label='steer')
-plt.legend()
-
-
-from scipy.interpolate import CubicSpline
-
-spline = CubicSpline(t,np.vstack((x,y)).T)
-teval = np.linspace(0,t[-1],1)
-plt.figure(3)
-plt.plot(spline(teval)[:,0], spline(teval)[:,1], 'b*')
-plt.plot(x,y,'r.')
-
-fig = plt.figure(4)
-ax = fig.subplots(3,1)
-ax[0].plot(t[:-1], throttle, 'r.')
-ax[1].plot(t[:-1],steer, 'b.')
-# ax[0].set_ylim(-1400,1500)
-ax[1].set_ylim(-1,1)
-ax[2].plot(t[:-1], v[:-1], 'k-')
-ax[2].plot(t[:-1], vcalc[:-1], 'b-')
-# ax[2].set_ylim(-1500, 1500)
-fig = plt.figure(5)
-plt.plot(t, xdot, 'r.')
-plt.plot(t, ydot, 'g.')
+    plt.ylim(-200,2200)
+    plt.xlim(-1000,1000)
+    plt.legend()
+    plt.figure(2)
+    plt.plot(t[:-1], throttle/1400, 'r-', label='throttle')
+    plt.plot(t[:-1], steer, 'b', label='steer')
+    plt.legend()
 
 
-plt.show(block=False)
-plt.pause(0.01)
-print("DEBUG")
+    from scipy.interpolate import CubicSpline
+
+    spline = CubicSpline(t,np.vstack((x,y)).T)
+    teval = np.linspace(0,t[-1],1)
+    plt.figure(3)
+    plt.plot(spline(teval)[:,0], spline(teval)[:,1], 'b*')
+    plt.plot(x,y,'r.')
+
+    fig = plt.figure(4)
+    ax = fig.subplots(3,1)
+    ax[0].plot(t[:-1], throttle, 'r.')
+    ax[1].plot(t[:-1],steer, 'b.')
+    # ax[0].set_ylim(-1400,1500)
+    ax[1].set_ylim(-1,1)
+    ax[2].plot(t[:-1], v[:-1], 'k-')
+    ax[2].plot(t[:-1], vcalc[:-1], 'b-')
+    # ax[2].set_ylim(-1500, 1500)
+    fig = plt.figure(5)
+    plt.plot(t, xdot, 'r.')
+    plt.plot(t, ydot, 'g.')
+
+
+    plt.show(block=False)
+    plt.pause(0.01)
+
+
+    print("DEBUG")
+
+if __name__ == "__main__":
+    main()
