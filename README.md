@@ -4,9 +4,13 @@
 >- Install ros2 and dev packages (do full)  
 >- Make venv in root of ws
 >- Activate, pip install rlbot, pyquaternion, scipy
->- Install setup/python_req.txt for venv  
+>- Install setup/python_req_local.txt for venv  
+>- Change pyvenv.cfg in venv to include system-site-packages
+>- Reactivate venv
 >- colcon build  in root of ws
 >- TODO:Make full_setup.bash non-absolute
+
+# Running
 >- Run . full_setup.bash will source python venv and ros env stuff  (i recommend adding it to your .bashrc file that way all debugger terminals and regular terminals are already sourced and ready to go, i haven't found a way to specify running a command before opening a debuggin terminal in vscode yet)
 >- Run steam BEFORE running AgentNode that way the agentnode instance isn't spawning the steam app
 >- ros2 run node rlbot_bridge_pkg AgentNode   (you'll have to confirm in the steam app that you want to run rocketleague with the extra parameters)
@@ -32,6 +36,7 @@
   
 >**PlotterNode**  
 >- Plot data from various topics for analysis  
+>- Mostly I use plotjuggler for plotting topic data
 
 ## Topics
 >- /cmd_vel
@@ -43,4 +48,6 @@
 
 ## Next Things
 >- Add trajectory following controller (generate twist message from trajectory and err)
+>- Incorporate Optimal Trajectory generation output into trajectory tracking controller using simple search for finding closest point
+>- Re-Implement optimal trajectory generatl to use splines of some sort to generate/model the trajectory instead.
 >- Add boost usage.
