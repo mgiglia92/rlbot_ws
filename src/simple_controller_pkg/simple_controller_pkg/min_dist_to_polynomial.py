@@ -12,9 +12,11 @@ class MinPoly:
         p = casadi.SX.sym('p')
         c = casadi.SX.sym('pow', self.degree+1)
         tau = casadi.SX.sym('tau', self.degree+1)
+
         F = Function('F', [t, p], [casadi.power(t, p)], ['time', 'power'], ['tau']) # Generate a vector for tau of this
         J = F.jacobian()
         G = Function('G', [tau, c], [casadi.dot(tau,c)], ['tau', 'coeff'], ['position'])
+        
         x = SX.sym('x') # X of body
         y = SX.sym('y')
         xt = SX.sym('xt') # X on traj
@@ -63,16 +65,27 @@ class MinPoly:
     def solve(self):
         self.sol = self.opti.solve()
         return self.opti.value(self.xmin), self.opti.value(self.ymin), self.opti.value(self.t)
-    
+
+def plot(xmin,ymin,tmin,p: Polynomial3):
+    import matplotlib.pyplot as plt
+
+    plt.figure(0)
+    t = np.linspace(0,p.tf,101)
+    x = polyval(p.px, t)
+    y = polyval(p.py, t)
+    plt.plot(x,y,'r.', label='Traj Path')
+    plt.show()
 if __name__ == "__main__":
     m = MinPoly()
     p = Polynomial3()
     p.px = [-4.3259823e-01,  8.0080902e+02, -3.8988417e-01,  3.6566865e-02]
     p.py = [-4.3259823e-01,  8.0080902e+02, -3.8988417e-01,  3.6566865e-02]
     p.tf = 2.0
-    m.update_parameters(-250, 1500, p)
+    m.update_parameters(-1500, 1500, p)
     try:
         xmin, ymin, tmin = m.solve()
+        print(xmin, ymin, tmin)
+        plot(xmin, ymin, tmin, p)
     except:
         pass
 
