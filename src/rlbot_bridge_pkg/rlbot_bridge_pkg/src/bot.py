@@ -52,6 +52,9 @@ class AgentLifecycleNode(LifecycleNode):
         self.service_callback_group = ReentrantCallbackGroup()
         self.action_callback_group = ReentrantCallbackGroup()
 
+        self.previous_controls = SimpleControllerState() # A place holder for the control input from the last timer expiration
+        self.controller_disconnected_timer = self.create_timer(1, self.disconnected_controller_timer_callback) # Timer to set inputs to 0 if controlelr stops publishing
+
         self.exec = MultiThreadedExecutor()
         print(type(self.exec))
         self.exec.add_node(self)
@@ -127,6 +130,13 @@ class AgentLifecycleNode(LifecycleNode):
                     return
         except (KeyboardInterrupt, rclpy.executors.ExternalShutdownException):
             raise rclpy.executors.ExternalShutdownException
+        
+    def disconnected_controller_timer_callback(self):
+        if(self.previous_controls == self.ros_controls):
+            # Havne't gotten a control input in 1 second, reset ros controls to 0
+            self.ros_controls = SimpleControllerState()
+        self.previous_controls = self.ros_controls
+        self.get_logger().info("Controller stopped publishing, setting inputs to all 0")
 
     def update_controls(self, msg: Twist):
         self.get_logger().debug('I heard: "%s"' % msg.linear.x)
