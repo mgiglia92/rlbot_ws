@@ -45,11 +45,13 @@ def angle_between(v1, v2):
 
 class StanleyControllerNode(Node):
     gains = PIDStruct()
+    trajectory = DiscretizedTrajectoryReference()
     def __init__(self, node_name="stanley_controller", **kwargs):
         super().__init__(node_name)
         self.publisher_ = self.create_publisher(ControllerReference, "/controller_reference", 10)
         self.publisher2_ = self.create_publisher(Twist, "/internals_stanley", 10)
-        self.subscription_ = self.create_subscription(DiscretizedTrajectoryReference, "/trajectory_reference", self.stanley_callback, 10)
+        self.subscription_ = self.create_subscription(DiscretizedTrajectoryReference, "/current_trajectory", self.update_trajectory, 10)
+        self.body_subscription_ = self.create_subscription(RigidBodyTickMsg, "/player0/RigidBodyTick", self.stanley_callback, 10)
         # self.services_ = [self.create_service(SetGains, "/simple_controller/set_gains", self.service_callback),
         #                   self.create_service(TwistSetpoint, "/simple_controller/twist_setpoint", self.setpoint_callback)]
         self.i = 0
@@ -83,46 +85,48 @@ class StanleyControllerNode(Node):
     #     response.success = True
     #     return response
 
-    def stanley_callback(self, msg: DiscretizedTrajectoryReference):
+    def update_trajectory(self, msg: DiscretizedTrajectoryReference):
+        self.trajectory = msg
+
+    def stanley_callback(self, msg: RigidBodyTickMsg):
+        # Exit if trajetory has no data
+        if(len(self.trajectory.x) == 0):
+            return
+        # Put relevant data into local variables for ease of reading
+
+        bot_state = msg.bot_state
+        pos = np.array([msg.bot_state.pose.position.x, msg.bot_state.pose.position.y, 0])
+        vel = np.array([msg.bot_state.twist.linear.x, msg.bot_state.twist.linear.y, 0])
+        vmag = bot_state.vmag
+
+        # Trajectory Position
+        x = np.array([self.trajectory.x.tolist()])
+        y = np.array([self.trajectory.y.tolist()])
+        z = np.zeros(x.shape)
+        pos_t = np.concatenate([x,y,z],axis=0).T # Transpose to get xyz vector on trailing axis for subtraction
+        # Trajectory Velocity
+        vx = np.array([self.trajectory.xdot.tolist()])
+        vy = np.array([self.trajectory.ydot.tolist()])
+        vz = np.zeros(vx.shape)
+        vel_t = np.concatenate([vx,vy,vz],axis=0).T
         
-        cr = ControllerReference()
-        xp = msg.rbt.bot_state.pose.position.x
-        yp = msg.rbt.bot_state.pose.position.y
-        o = msg.rbt.bot_state.pose.orientation
-        vmag = msg.rbt.bot_state.vmag
-        quat = np.array([o.w, o.x, o.y, o.z])
-        forward = rotate_vector(np.array([1,0,0]), quat, False)
-        right = rotate_vector(np.array([0,1,0]), quat, False)
-        up = rotate_vector(np.array([0,0,1]), quat, False)
 
-        # Sanitize Heading input
-        # q = msg.rbt.bot_state.pose.orientation
-        # quat = np.array([q.w,q.x,q.y,q.z])
-        # x = np.array([1,0,0])
-        # hvec = rotate_vector(x,quat)
-        # hvec[2]=0.0
-        # yaw = angle_between(hvec,x)
+        # Find point on trajectory closest to current body position
+        dist_vec = pos_t-pos
+        dist_mag = np.linalg.norm(dist_vec, axis=1) # Get the norm of the matrix along the trailing axis (magnitude of each |xyz| element)
+        min_index = np.argmin(dist_mag)
+        pos_t_min = pos_t[min_index]
 
-        # roll,pitch,yaw = quat2euler([o.w, o.x, o.y, o.z], 'sxyz')
-        v = msg.rbt.bot_state.twist.linear
-        vel = np.array([v.x, v.y, v.z])
-        # Heading error
-        vx = msg.vxr
-        vy = msg.vyr
-        yaw_desired = msg.thetar
-
-        # Cross Track Error
-        vec_to_path_world = np.array([msg.xr, msg.yr, 0]) - np.array([xp, yp, 0])
+        # Calculate the Cross Track Error (CTE)
+        vec_to_path_world = dist_vec[min_index]
         R = axangle2mat([0,0,1], np.pi/2)
         ctvec_body = np.dot(R,vec_to_path_world)
         cte = np.linalg.norm(vec_to_path_world)
-        trajectory_velocity = np.array([msg.vxr, msg.vyr, 0])
-
+        trajectory_velocity = vel_t[min_index]
         if(angle_between(unit_vector(vel), unit_vector(vec_to_path_world)) > 0):
             cte = -1*cte
 
-        # he = angle_between([vx, vy, 0], [np.cos(yaw), np.sin(yaw), 0])
-        # he = yaw_desired-yaw
+        # Calculate the Heading Error (HE)
         he = angle_between(unit_vector(trajectory_velocity), unit_vector(vel))
         # if(he > np.pi):
         #     he = he - np.pi
@@ -133,14 +137,17 @@ class StanleyControllerNode(Node):
         twist.angular.z = 0.0
 
         unit_vel = unit_vector(vel)
+        # Put data into ControllerReference msg for publishing
+        cr = ControllerReference()
         cr.headingx = unit_vel[0]
         cr.headingy = unit_vel[1]
-        cr.rbt = msg.rbt
+        cr.rbt = msg
         cr.he = he
         cr.cte = cte
         cr.correction = 2*he + np.arctan2(3*cte, (0.001+vmag))
         cr.v_desired = float(1000)
         cr.w_desired = float(np.clip(2*he + np.arctan2(3*cte, (0.001+vmag)), -5.5, 5.5))
+        cr.desired_pos = Vector3(x=pos_t_min[0], y=pos_t_min[1], z=pos_t_min[2])
         # cr.w_desired = float(np.clip(he, -5.5, 5.5))
         self.publisher_.publish(cr)
         self.publisher2_.publish(twist)
