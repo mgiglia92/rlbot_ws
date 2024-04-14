@@ -64,8 +64,8 @@ class TrajectoryOpti(Opti):
         # return vertcat(0,0,0,0,0)
         return vertcat( x[6]*cos(x[4]+x[5])          ,     #xdot
                         x[6]*sin(x[4]+x[5]),     #ydot
-                        x[6]*cos(x[4]),     #xddot
-                        x[6]*sin(x[4]),     #yddot
+                        u[0]*cos(x[4]),     #xddot
+                        u[0]*sin(x[4]),     #yddot
                         u[1],               #thetadot
                         0,                  #theatddot
                         u[0])               #vmagdot
@@ -104,10 +104,12 @@ class TrajectoryOpti(Opti):
         self.subject_to(self.bounded(-3300, self.U[0,:],1600)) # BOund U
         self.subject_to(self.bounded(0.1, self.T, 100)) # Bound Time
         self.subject_to(self.bounded(0, self.X[6,:], 2300)) # Bound vmag
+        # self.subject_to(self.X[6,:] == cos(self.X[2,:]))
+        # self.subject_to(self.X[6,:] == sin(self.X[3,:]))
         # self.subject_to(self.X[])
         # self.subject_to(self.X[2,-1]*sin(-1*self.X[4,-1]) + self.X[3,-1]*cos(-1*self.X[4,-1]) == 0)
         # self.subject_to(self.U[1,:] == self.X[5,:d-1])
-        self.subject_to(self.bounded(-1, self.X[5,:], 1))
+        self.subject_to(self.bounded(-5.5, self.X[5,:], 5.5)) # Bound omega
         
     def set_objectives(self):
         self.minimize(self.T)
@@ -157,7 +159,10 @@ class TrajectoryOpti(Opti):
 def main():
     opti = TrajectoryOpti()
     # opti.testrk4()
-    IC = ActiveTraits([1,1,1,1,1,1,1],[0, 0, 0, 0, 0, 0,1000])
+    IC = ActiveTraits([1,1,1,1,1,1,1],[-2000, -1000, \
+                                        500, 0, \
+                                        0.0, 0, \
+                                        500])
     FC = ActiveTraits([1,1,0,0,1,0,1], [0, 2000, 0, 0, 0, 0, 2000])
     sol = opti.reset_optimizer(IC, FC)
 
@@ -175,7 +180,7 @@ def main():
     theta = sol.value(opti.X[4,:])
     thetadot = sol.value(opti.X[5,:])
     v = sol.value(opti.X[6,:])
-    vcalc = np.sqrt(xdot**2 + ydot**2)
+    vcalc = sqrt(xdot**2 + ydot**2)
     throttle = sol.value(opti.U[0,:])
     steer = sol.value(opti.U[1,:])
 
@@ -210,17 +215,21 @@ def main():
 
     fig = plt.figure(4)
     ax = fig.subplots(3,1)
-    ax[0].plot(t[:-1], throttle, 'r.')
-    ax[1].plot(t[:-1],steer, 'b.')
+    ax[0].plot(t[:-1], throttle, 'r.', label='throttle')
+    ax[1].plot(t[:-1],steer, 'b.', label='steer')
     # ax[0].set_ylim(-1400,1500)
     ax[1].set_ylim(-1,1)
-    ax[2].plot(t[:-1], v[:-1], 'k-')
-    ax[2].plot(t[:-1], vcalc[:-1], 'b-')
+    ax[2].plot(t[:-1], v[:-1], 'k.', label='vmag')
+    ax[2].plot(t[:-1], vcalc[:-1], 'b.', label='vcalc')
+    ax[0].legend()
+    ax[1].legend()
+    ax[2].legend()
     # ax[2].set_ylim(-1500, 1500)
     fig = plt.figure(5)
-    plt.plot(t, xdot, 'r.')
-    plt.plot(t, ydot, 'g.')
-
+    plt.plot(t, xdot, 'r.', label='xdot')
+    plt.plot(t, ydot, 'g.', label='ydot')
+    plt.legend()
+    
 
     plt.show(block=False)
     plt.pause(0.01)
