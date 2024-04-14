@@ -25,7 +25,7 @@ class TrajectoryGenerator(Node):
         # self.publish_trajectory(IC,FC)
         # self.init_optimizer()
         #TODO: Change callback to not take args, use class vars instead
-        self.timer = self.create_timer(10, self.init_optimizer)
+        self.timer = self.create_timer(1, self.init_optimizer)
         # Service stuff
 
     def update_bot_data(self, msg: RigidBodyTick):
@@ -40,68 +40,73 @@ class TrajectoryGenerator(Node):
         ball_pos = self.bot_rbt.ball_state.pose.position
         
         IC = ActiveTraits([1,1,1,1,1,1,1], [pos.x, pos.y, vel.x, vel.y, yaw, omega.z, vmag])
-        FC = ActiveTraits([1,1,0,0,0,0,0], [(1+random())*1000, ball_pos.y, 0,0,0,0, 0])
+        FC = ActiveTraits([1,1,0,0,0,0,0], [2000, 2000, 0,0,0,0, 0])
         self.publish_trajectory(IC, FC)
 
     def publish_trajectory(self, \
                         IC = ActiveTraits([1,1,1,1,1,1,1],[0, 0, 0, 0, 1.5, 0,0]),\
                         FC = ActiveTraits([1,1,0,0,1 ,0,0], [1000, 1000, 0, 0, 1.5, 0, 0])):
-        self.sol = self.optimizer.reset_optimizer(IC, FC)
-        sol = self.sol
-        tf = sol.value(self.optimizer.T)
-        t = np.linspace(0,tf, self.optimizer.N+1)
-        x = sol.value(self.optimizer.X[0,:])
-        y = sol.value(self.optimizer.X[1,:])
-        xdot = sol.value(self.optimizer.X[2,:])
-        ydot = sol.value(self.optimizer.X[3,:])
-        theta = sol.value(self.optimizer.X[4,:])
-        thetadot = sol.value(self.optimizer.X[5,:])
-        v = np.sqrt(xdot**2 + ydot**2)
-        throttle = sol.value(self.optimizer.U[0,:])
-        steer = sol.value(self.optimizer.U[1,:])
-        self.current_trajectory = CubicSpline(t, np.vstack((x,y)).T)
-        z = np.polyfit(t, np.vstack((x,y)).T, deg=3)
-        newspline = PPoly.construct_fast(self.current_trajectory.c, self.current_trajectory.x)
-        teval = np.linspace(0,tf,101)
-        xpoly = np.poly1d(z[:,0])
-        ypoly = np.poly1d(z[:,1])
-        
-        # plt.figure(1)
-        # plt.plot(xpoly(teval), ypoly(teval), 'r.')
-        # plt.plot(self.current_trajectory(teval)[:,0], self.current_trajectory(teval)[:,1], 'b.')
-        # plt.show(block=False)
-        # plt.pause(0.01)
+        try:
+            self.sol = self.optimizer.reset_optimizer(IC, FC)
 
-        msg = DiscretizedTrajectoryReference()
-        msg.x              = x.tolist()
-        msg.y              = y.tolist()
-        msg.xdot           = xdot.tolist()
-        msg.ydot           = ydot.tolist()
-        msg.theta          = theta.tolist()
-        msg.thetadot       = thetadot.tolist()
-        msg.vmag           = sol.value(self.optimizer.X[-1,:]).tolist()
-        msg.acceleration   = throttle.tolist()
-        msg.steer          = steer.tolist()
-        msg.tf             = tf
-        self.get_logger().info(f"Publish DiscretizedTrajectoryReference: {msg}")
+            sol = self.sol
+            tf = sol.value(self.optimizer.T)
+            t = np.linspace(0,tf, self.optimizer.N+1)
+            x = sol.value(self.optimizer.X[0,:])
+            y = sol.value(self.optimizer.X[1,:])
+            xdot = sol.value(self.optimizer.X[2,:])
+            ydot = sol.value(self.optimizer.X[3,:])
+            theta = sol.value(self.optimizer.X[4,:])
+            thetadot = sol.value(self.optimizer.X[5,:])
+            v = np.sqrt(xdot**2 + ydot**2)
+            throttle = sol.value(self.optimizer.U[0,:])
+            steer = sol.value(self.optimizer.U[1,:])
+            self.current_trajectory = CubicSpline(t, np.vstack((x,y)).T)
+            z = np.polyfit(t, np.vstack((x,y)).T, deg=3)
+            newspline = PPoly.construct_fast(self.current_trajectory.c, self.current_trajectory.x)
+            teval = np.linspace(0,tf,101)
+            xpoly = np.poly1d(z[:,0])
+            ypoly = np.poly1d(z[:,1])
+            
+            # plt.figure(1)
+            # plt.plot(xpoly(teval), ypoly(teval), 'r.')
+            # plt.plot(self.current_trajectory(teval)[:,0], self.current_trajectory(teval)[:,1], 'b.')
+            # plt.show(block=False)
+            # plt.pause(0.01)
 
-        self.publisher_.publish(msg)
-        internals = PoseArray()
-        xi=Float32MultiArray()
-        poses=[]
-        xs =[]
-        for i,j,k in zip(x,y,theta):
-            p=Pose()
-            p.position.y=j
-            p.orientation.z=k
-            poses.append(p)
-            xs.append(float(i))
-        xi.data=xs
-        internals.poses = poses
-        # yi=Float32MultiArray()
-        # yi.data=y
-        self.internals_publisher_.publish(xi)
+            msg = DiscretizedTrajectoryReference()
+            msg.x              = x.tolist()
+            msg.y              = y.tolist()
+            msg.xdot           = xdot.tolist()
+            msg.ydot           = ydot.tolist()
+            msg.theta          = theta.tolist()
+            msg.thetadot       = thetadot.tolist()
+            msg.vmag           = sol.value(self.optimizer.X[-1,:]).tolist()
+            msg.acceleration   = throttle.tolist()
+            msg.steer          = steer.tolist()
+            msg.tf             = tf
+            self.get_logger().info(f"Publish DiscretizedTrajectoryReference: {msg}")
 
+            self.publisher_.publish(msg)
+            internals = PoseArray()
+            xi=Float32MultiArray()
+            poses=[]
+            xs =[]
+            for i,j,k in zip(x,y,theta):
+                p=Pose()
+                p.position.y=j
+                p.orientation.z=k
+                poses.append(p)
+                xs.append(float(i))
+            xi.data=xs
+            internals.poses = poses
+            # yi=Float32MultiArray()
+            # yi.data=y
+            self.internals_publisher_.publish(xi)
+        except:
+            import traceback
+            traceback.print_exc()
+            
 def main(args=None):
     rclpy.init(args=args)
     IC = ActiveTraits([1,1,1,1,1,1,1],[0, 0, 0, 0, 1.5, 0,0])
