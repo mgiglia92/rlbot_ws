@@ -14,12 +14,12 @@ def generate_launch_description():
      setgains.gains = gains
      gains_yaml = message_to_yaml(setgains)
      ld = LaunchDescription([
-     #    Node(package='simple_controller_pkg', 
-     #         executable='SimpleControllerNode'),
-     #    Node(package='simple_controller_pkg',
-     #         executable='StanleyControllerNode'),
-     #    Node(package='simple_controller_pkg', 
-     #         executable='ReferenceGeneratorNode'),
+        Node(package='simple_controller_pkg', 
+             executable='SimpleControllerNode'),
+        Node(package='simple_controller_pkg',
+             executable='StanleyControllerNode'),
+        Node(package='simple_controller_pkg', 
+             executable='ReferenceGeneratorNode'),
      ])
      ld.add_action(
           ExecuteProcess(

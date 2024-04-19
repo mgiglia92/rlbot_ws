@@ -49,7 +49,7 @@ class SimpleController(Node):
         response.success = True
         return response
 
-    def listener_callback(self, msg):
+    def listener_callback(self, msg: ControllerReference):
         # Do nasty controls math all clobbered up 
         tnow = self.get_clock().now().nanoseconds
         dt = tnow - self.prev_time
@@ -72,7 +72,7 @@ class SimpleController(Node):
         u_t, u_s = get_best_steering_and_throttle(vmag, des_a, msg.w_desired)
 
 # IGNORE THE "BEST" STEERING AND USE STANLEY CORRECTION DIRECTLY
-        # u_s = msg.correction
+        u_s = msg.correction
 
         twist = Twist()
         twist.linear.x = u_t
@@ -93,6 +93,7 @@ class SimpleController(Node):
         cr.rbt = msg.rbt
 
         self.publisher_.publish(twist)
+        self.get_logger().info(f"Published: {twist}")
         self.internals_publisher_.publish(cr)
 
     def norm(self, vec) -> np.array:
