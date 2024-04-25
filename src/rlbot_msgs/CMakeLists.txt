@@ -19,12 +19,15 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/PIDGains.msg"
   "msg/TrajectoryReference.msg"
   "msg/DiscretizedTrajectoryReference.msg"
+  "msg/ActiveTraitsMsg.msg"
   "msg/ControllerReference.msg"
   "srv/ResetGameState.srv"
   "srv/SetGains.srv"
   "srv/TwistSetpoint.srv"
+  "srv/GetOptimalTrajectory.srv"
   "msg/Polynomial3.msg"
   "action/ControlVelocity.action"
+  "action/ExecuteTrajectory.action"
   DEPENDENCIES geometry_msgs std_msgs
  )
 
