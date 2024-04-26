@@ -30,10 +30,11 @@ class TrajectoryGenerator(Node):
         # Service stuff
 
     def get_trajectory_service_callback(self, request: GetOptimalTrajectory.Request, response: GetOptimalTrajectory.Response):
-        IC = ActiveTraits(request.ic.active, request.ic.values)
-        FC = ActiveTraits(request.fc.active, request.fc.values)
+        self.get_logger().info("Received service request!")
+        IC = ActiveTraits.from_ros_msg(request.ic)
+        FC = ActiveTraits.from_ros_msg(request.fc)
         trajectory = self.calculate_trajectory(IC, FC)
-        response.trajectory = response.trajectory = trajectory
+        response.trajectory = trajectory
         return response
 
     def update_bot_data(self, msg: RigidBodyTick):
@@ -88,10 +89,12 @@ class TrajectoryGenerator(Node):
             msg.acceleration   = throttle.tolist()
             msg.steer          = steer.tolist()
             msg.tf             = tf
-
+            return msg
         except:
             import traceback
             traceback.print_exc()
+            msg = DiscretizedTrajectoryReference()
+            return msg
 
     def publish_trajectory(self, msg: DiscretizedTrajectoryReference):
         self.publisher_.publish(msg)
