@@ -2,6 +2,7 @@ from casadi import *
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import CubicSpline, PPoly
+from rlbot_msgs.msg import ActiveTraitsMsg
 
 class ActiveTraits:
     #TODO: Make default values work for any sizes
@@ -9,7 +10,20 @@ class ActiveTraits:
         assert len(active) == len(values), f"Mismatched lengths: {len(active)} {len(values)}"
         self.active = active
         self.values = values
-        self.length = lambda: len(self.active)
+        self.length = lambda: len(self.active)    
+    
+    @classmethod
+    def from_ros_msg(cls, msg: ActiveTraitsMsg):
+        # Instantiate a class from a custom ros msg
+        cls.active=[]
+        cls.values=[]
+        for each in msg.active:
+            cls.active.append(int(each.data))
+        for each in msg.values:
+            cls.values.append(float(each.data))
+        
+        cls.length = lambda: len(cls.active)
+        return cls
 
 class TrajectoryOpti(Opti):
     # # Just a basic tester to test rk4 integrarion and plot
