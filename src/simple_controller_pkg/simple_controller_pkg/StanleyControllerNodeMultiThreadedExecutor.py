@@ -1,17 +1,21 @@
 import rclpy
+import rclpy.executors
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import ReentrantCallbackGroup
-from rclpy.action import ActionServer
+from rclpy.action import ActionServer, GoalResponse, CancelResponse
+from rclpy.action.server import ServerGoalHandle
+from rclpy.client import Future
 
 from geometry_msgs.msg import Twist, Vector3
 from geometry_msgs.msg import Quaternion as QMsg
+from std_msgs.msg import Int32, Float32
 from rlbot_msgs.msg import RigidBodyTick as RigidBodyTickMsg
 from rlbot_msgs.msg import ControllerReference
 from rlbot_msgs.msg import DiscretizedTrajectoryReference, ActiveTraitsMsg
 from rlbot_msgs.srv import SetGains, TwistSetpoint, GetOptimalTrajectory
 from rlbot_msgs.action import ExecuteTrajectory
-
+from rlbot_msgs.action._execute_trajectory import ExecuteTrajectory_Result
 from threading import Thread
 
 from transforms3d.quaternions import rotate_vector
@@ -89,7 +93,7 @@ class StanleyControllerNode(Node):
             while True:
                 self.exec.spin_once()
         
-        except (KeyboardInterrupt, rclpy.executors.ExternalShutdown):
+        except (KeyboardInterrupt, rclpy.executors.ExternalShutdownException):
             raise rclpy.executors.ExternalShutdownException
 
     def get_ic_from_rigid_body_tick(self, rbt: RigidBodyTickMsg) -> ActiveTraitsMsg:
@@ -99,34 +103,59 @@ class StanleyControllerNode(Node):
         vx = vmag*np.cos(rbt.yaw)
         vy = vmag*np.sin(rbt.yaw)
 
+        #TODO: Turn this process into a utility
+
         ic = ActiveTraitsMsg()
-        ic.active = [1,1,0,0,1,0,1]
-        ic.values = [pos.x, pos.y, vx, vy, yaw, 0.0, vmag]
+        for each in [1,1,0,0,1,0,1]:
+            a=Int32()
+            a.data=int(each)
+            ic.active.append(a)
+        for each in [pos.x, pos.y, vx, vy, yaw, 0.0, vmag]:
+            a=Float32()
+            a.data=float(each)
+            ic.values.append(a)
         return ic
 
     def generate_random_final_constraints(self) -> ActiveTraitsMsg:
         pos = self.latest_body_state.bot_state.pose.position
         vmag = self.latest_body_state.bot_state.vmag
         fc = ActiveTraitsMsg()
-        fc.active = [1,1,0,0,0,0,1]
-        fc.values = [-1*pos.x, -1*pos.y, 0.0, 0.0, 0.0, 0.0, np.random(1)*vmag]
+        for each in [1,1,0,0,0,0,1]:
+            a=Int32()
+            a.data=int(each)
+            fc.active.append(a)
+        for each in [-1*pos.x, -1*pos.y, 0.0, 0.0, 0.0, 0.0, np.random.random(1)*vmag]:
+            a=Float32()
+            a.data=float(each)
+            fc.values.append(a)
         return fc
 
-    def action_callback(self):
+    def action_callback(self, goal_handle: ServerGoalHandle):
         # Try calling service
         while not self.trajectory_service_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info(f"{self.trajectory_service_client.srv_name} not available, trying again...")
 
         self.req = GetOptimalTrajectory.Request()
         self.req.ic = self.get_ic_from_rigid_body_tick(self.latest_body_state)
+        #TODO: Use goal lhandle here
         self.req.fc = self.generate_random_final_constraints()
+        self.trajectory_service_future = Future()
         self.trajectory_service_future = self.trajectory_service_client.call_async(self.req)
+        import time
         while not self.trajectory_service_future.done():
             self.get_logger().info(f"{self.trajectory_service_client.srv_name} service not completed yet")
-        
+        GoalResponse.ACCEPT
         trajectory = DiscretizedTrajectoryReference()
-        trajectory = self.trajectory_service_future.result()
+        trajectory = self.trajectory_service_future.result().trajectory
+
         self.update_trajectory(trajectory)
+        goal_handle.succeed()
+
+        ret = ExecuteTrajectory_Result()
+        ret.succeed = True
+        self.get_logger().info("ACTION COMPLETED")
+        return ret
+
 
     def update_trajectory(self, msg: DiscretizedTrajectoryReference):
         self.trajectory = msg
@@ -216,11 +245,14 @@ def main(args=None):
 
     controller = StanleyControllerNode()
 
-    rclpy.spin(controller)
+    # rclpy.spin(controller)
 
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically
     # when the garbage collector destroys the node object)
+    import time
+    while controller.executor_thread.is_alive():
+        time.sleep(1)
     controller.destroy_node()
     rclpy.shutdown()
 
