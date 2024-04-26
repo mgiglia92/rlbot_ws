@@ -4,6 +4,7 @@ from trajectory_generator_pkg.sample_trajectory_generator import TrajectoryOpti,
 from scipy.interpolate import CubicSpline, PPoly
 import matplotlib.pyplot as plt
 from rlbot_msgs.msg import Polynomial3, RigidBodyTick, DiscretizedTrajectoryReference
+from rlbot_msgs.srv import GetOptimalTrajectory
 from geometry_msgs.msg import PoseArray, Pose
 from std_msgs.msg import Float32MultiArray, Float32
 from random import random
@@ -16,7 +17,7 @@ class TrajectoryGenerator(Node):
         self.publisher_ = self.create_publisher(DiscretizedTrajectoryReference, '/current_trajectory', 10)
         self.internals_publisher_ = self.create_publisher(Float32MultiArray, '/trajectory_internals', 10)
         self.subscription_ = self.create_subscription(RigidBodyTick, "/player0/RigidBodyTick", self.update_bot_data, 10) 
-        
+        self.trajectory_service = self.create_service(GetOptimalTrajectory, "/get_trajectory", self.get_trajectory_service_callback)
         # Optimizer stuff
         self.optimizer = TrajectoryOpti()
         self.bot_rbt = RigidBodyTick()
@@ -25,17 +26,25 @@ class TrajectoryGenerator(Node):
         # self.publish_trajectory(IC,FC)
         # self.init_optimizer()
         #TODO: Change callback to not take args, use class vars instead
-        self.timer = self.create_timer(1, self.init_optimizer)
+        # self.timer = self.create_timer(1, self.init_optimizer)
         # Service stuff
+
+    def get_trajectory_service_callback(self, request: GetOptimalTrajectory.Request, response: GetOptimalTrajectory.Response):
+        IC = ActiveTraits(request.ic.active, request.ic.values)
+        FC = ActiveTraits(request.fc.active, request.fc.values)
+        trajectory = self.calculate_trajectory(IC, FC)
+        response.trajectory = response.trajectory = trajectory
+        return response
 
     def update_bot_data(self, msg: RigidBodyTick):
         self.bot_rbt = msg
     
+# Obsolete/Deprecated?
     def init_optimizer(self):
         pos = self.bot_rbt.bot_state.pose.position
         vel = self.bot_rbt.bot_state.twist.linear
         vmag = self.bot_rbt.bot_state.vmag
-        yaw = 0.0 # TODO: Need to get yaw from quaternion
+        yaw = self.bot_rbt.yaw
         omega = self.bot_rbt.bot_state.twist.angular
         ball_pos = self.bot_rbt.ball_state.pose.position
         
@@ -43,7 +52,7 @@ class TrajectoryGenerator(Node):
         FC = ActiveTraits([1,1,0,0,0,0,0], [2000, 2000, 0,0,0,0, 0])
         self.publish_trajectory(IC, FC)
 
-    def publish_trajectory(self, \
+    def calculate_trajectory(self, \
                         IC = ActiveTraits([1,1,1,1,1,1,1],[0, 0, 0, 0, 1.5, 0,0]),\
                         FC = ActiveTraits([1,1,0,0,1 ,0,0], [1000, 1000, 0, 0, 1.5, 0, 0])):
         try:
@@ -58,21 +67,15 @@ class TrajectoryGenerator(Node):
             ydot = sol.value(self.optimizer.X[3,:])
             theta = sol.value(self.optimizer.X[4,:])
             thetadot = sol.value(self.optimizer.X[5,:])
-            v = np.sqrt(xdot**2 + ydot**2)
+            # v = np.sqrt(xdot**2 + ydot**2)
             throttle = sol.value(self.optimizer.U[0,:])
             steer = sol.value(self.optimizer.U[1,:])
-            self.current_trajectory = CubicSpline(t, np.vstack((x,y)).T)
-            z = np.polyfit(t, np.vstack((x,y)).T, deg=3)
-            newspline = PPoly.construct_fast(self.current_trajectory.c, self.current_trajectory.x)
-            teval = np.linspace(0,tf,101)
-            xpoly = np.poly1d(z[:,0])
-            ypoly = np.poly1d(z[:,1])
-            
-            # plt.figure(1)
-            # plt.plot(xpoly(teval), ypoly(teval), 'r.')
-            # plt.plot(self.current_trajectory(teval)[:,0], self.current_trajectory(teval)[:,1], 'b.')
-            # plt.show(block=False)
-            # plt.pause(0.01)
+            # self.current_trajectory = CubicSpline(t, np.vstack((x,y)).T)
+            # z = np.polyfit(t, np.vstack((x,y)).T, deg=3)
+            # newspline = PPoly.construct_fast(self.current_trajectory.c, self.current_trajectory.x)
+            # teval = np.linspace(0,tf,101)
+            # xpoly = np.poly1d(z[:,0])
+            # ypoly = np.poly1d(z[:,1])
 
             msg = DiscretizedTrajectoryReference()
             msg.x              = x.tolist()
@@ -85,27 +88,14 @@ class TrajectoryGenerator(Node):
             msg.acceleration   = throttle.tolist()
             msg.steer          = steer.tolist()
             msg.tf             = tf
-            self.get_logger().info(f"Publish DiscretizedTrajectoryReference: {msg}")
 
-            self.publisher_.publish(msg)
-            internals = PoseArray()
-            xi=Float32MultiArray()
-            poses=[]
-            xs =[]
-            for i,j,k in zip(x,y,theta):
-                p=Pose()
-                p.position.y=j
-                p.orientation.z=k
-                poses.append(p)
-                xs.append(float(i))
-            xi.data=xs
-            internals.poses = poses
-            # yi=Float32MultiArray()
-            # yi.data=y
-            self.internals_publisher_.publish(xi)
         except:
             import traceback
             traceback.print_exc()
+
+    def publish_trajectory(self, msg: DiscretizedTrajectoryReference):
+        self.publisher_.publish(msg)
+        self.get_logger().info(f"Publish DiscretizedTrajectoryReference: {msg}")
             
 def main(args=None):
     rclpy.init(args=args)
