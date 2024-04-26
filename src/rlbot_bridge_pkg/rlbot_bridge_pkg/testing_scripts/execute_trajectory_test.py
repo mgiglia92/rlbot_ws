@@ -7,7 +7,7 @@ from rlbot_msgs.msg import State, ActiveTraitsMsg
 from rlbot_msgs.srv import SetGains
 from rlbot_msgs.action import ExecuteTrajectory
 from trajectory_generator_pkg.sample_trajectory_generator import ActiveTraits
-from std_msgs.msg import Int32MultiArray
+from std_msgs.msg import Int32MultiArray, Int32, Float32
 # import argparse
 import numpy as np
 
@@ -20,8 +20,20 @@ class MinimalActionClientAsync(Node):
     def send_goal(self, goal: ActiveTraitsMsg):
         goal_msg = ExecuteTrajectory.Goal()
         traits = ActiveTraitsMsg()
-        for each in [1,1,0,0,1,0,1]: traits.active.append(each)
-        for each in [2000., 2000., 0., 0., 0., 0., 0.]: traits.values.append(each)
+        # traits.active.append(1)
+        # traits.values.append(float(1))
+
+        #TODO: Turn into utility
+        for each in [1,1,0,0,1,0,1]:
+            a=Int32()
+            a.data = each
+            traits.active.append(a)
+
+        for each in [2000., 2000., 0., 0., 0., 0., 0.]: 
+            a=Float32()
+            a.data = each
+            traits.values.append(a)
+
         goal_msg.desired = traits
 
         while not self._action_client.wait_for_server(5):
