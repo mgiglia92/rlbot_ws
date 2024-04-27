@@ -124,7 +124,7 @@ class StanleyControllerNode(Node):
             a=Int32()
             a.data=int(each)
             fc.active.append(a)
-        for each in [-1*pos.x, -1*pos.y, 0.0, 0.0, 0.0, 0.0, np.random.random(1)*vmag]:
+        for each in [-1*pos.x, -1*pos.y, 0.0, 0.0, 0.0, 0.0, 0]:
             a=Float32()
             a.data=float(each)
             fc.values.append(a)
@@ -137,8 +137,7 @@ class StanleyControllerNode(Node):
 
         self.req = GetOptimalTrajectory.Request()
         self.req.ic = self.get_ic_from_rigid_body_tick(self.latest_body_state)
-        #TODO: Use goal lhandle here
-        self.req.fc = self.generate_random_final_constraints()
+        self.req.fc = goal_handle._goal_request.desired
         self.trajectory_service_future = Future()
         self.trajectory_service_future = self.trajectory_service_client.call_async(self.req)
         import time
