@@ -29,7 +29,7 @@ class MinimalActionClientAsync(Node):
             a.data = each
             traits.active.append(a)
 
-        for each in [2000., 2000., 0., 0., 0., 0., 0.]: 
+        for each in [0., 0., 0., 0., 0., 0., 0.]: 
             a=Float32()
             a.data = each
             traits.values.append(a)
