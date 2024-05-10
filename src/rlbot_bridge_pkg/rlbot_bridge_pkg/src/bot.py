@@ -132,6 +132,7 @@ class AgentLifecycleNode(LifecycleNode):
         self.get_logger().debug('I heard: "%s"' % msg.linear.x)
         self.ros_controls.throttle = np.clip(msg.linear.x, -1, 1)
         self.ros_controls.steer = np.clip(msg.angular.z, -1 ,1)
+        self.ros_controls.boost = int(msg.linear.y)
 
     def reset_game_state(self, request, response):
         try:

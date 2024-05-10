@@ -139,7 +139,7 @@ class StanleyControllerNode(Node):
         cr.he = he
         cr.cte = cte
         cr.correction = 2*he + np.arctan2(3*cte, (0.001+vmag))
-        cr.v_desired = float(1200)
+        cr.v_desired = float(2000)
         cr.w_desired = float(np.clip(2*he + np.arctan2(3*cte, (0.001+vmag)), -5.5, 5.5))
         # cr.w_desired = float(np.clip(he, -5.5, 5.5))
         self.publisher_.publish(cr)

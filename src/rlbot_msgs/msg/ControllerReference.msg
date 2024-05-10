@@ -10,3 +10,4 @@ float64 vmag
 float64 correction
 float64 headingx
 float64 headingy
+bool boost

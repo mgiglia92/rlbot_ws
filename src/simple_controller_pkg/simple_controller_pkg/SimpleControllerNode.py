@@ -73,9 +73,11 @@ class SimpleController(Node):
 
 # IGNORE THE "BEST" STEERING AND USE STANLEY CORRECTION DIRECTLY
         u_s = msg.correction
+        boost = 1.0
 
         twist = Twist()
         twist.linear.x = u_t
+        twist.linear.y = boost
         twist.angular.z = u_s
         self.prev_time = tnow
         self.prev_vmag = body_vel
