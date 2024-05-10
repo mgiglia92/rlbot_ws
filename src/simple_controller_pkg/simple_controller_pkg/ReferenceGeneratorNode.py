@@ -44,30 +44,35 @@ def angle_between(v1, v2):
 
 class MinDist:
     def __init__(self):    
-        #Symbolic expression
+                #Symbolic expression
         self.radius = 3000
+        self.t = casadi.SX.sym('t')
         self.xc = casadi.SX.sym('xc')
         self.x1 = casadi.SX.sym('x1')
         self.yc = casadi.SX.sym('yc')
         self.y1 = casadi.SX.sym('y1')
-        self.F = casadi.Function('F', [self.xc], [casadi.sqrt(self.radius**2-self.xc**2)])
+        self.F = casadi.Function('F', [self.t], [casadi.cos(self.t)])
+        self.G = casadi.Function('F', [self.t], [casadi.sin(self.t)])
         self.J = self.F.jacobian()
         self.dist = casadi.Function('dist', [self.xc, self.x1, self.yc, self.y1], [casadi.sqrt((self.xc-self.x1)**2 + (self.yc-self.y1)**2)])
 
         self.opti = casadi.Opti()
+        self.tmin = self.opti.variable(1)
         self.xpos = self.opti.parameter()
         self.ypos = self.opti.parameter()
-        self.xmin = self.opti.variable(1)
-        self.ymin = self.F(self.xmin)
-        self.opti.set_initial(self.xmin, 0.99)
-        self.opti.subject_to(self.xmin>=-1*(self.radius-1))
-        self.opti.subject_to(self.xmin<=(self.radius-1))
+        self.xmin = self.radius*casadi.cos(self.tmin)
+        self.ymin = self.radius*casadi.sin(self.tmin)
+        self.opti.set_initial(self.tmin, 0)
+        self.opti.subject_to(self.tmin>=-2*casadi.pi)
+        self.opti.subject_to(self.tmin<=2*casadi.pi)
         self.opti.minimize(self.dist(self.xmin, self.xpos, self.ymin, self.ypos))
         opts = {'ipopt.print_level': 2, 'print_time': 0, 'ipopt.sb': 'yes'}
         self.opti.solver('ipopt', opts)
         self.sol = None
+
     
     def update_position(self, x, y):
+        self.opti.set_initial(self.tmin, 0)
         self.opti.set_value(self.xpos, x)
         self.opti.set_value(self.ypos, y)
     
