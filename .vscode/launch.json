@@ -1,0 +1,48 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "2.0.0",
+    "configurations": [
+        {
+            "name": "Python: AgentNode",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "/home/mgiglia/workspaces/rlbot_ws/src/rlbot_bridge_pkg/rlbot_bridge_pkg/AgentNode.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "/home/mgiglia/workspaces/rlbot_ws/install/simple_controller_pkg/lib/python3.10/site-packages:/home/mgiglia/workspaces/rlbot_ws/install/rlbot_msgs/lib/python3.10/site-packages:/home/mgiglia/workspaces/rlbot_ws/install/rlbot_bridge_pkg/lib/python3.10/site-packages:/home/mgiglia/workspaces/rlbot_ws/install/plotter/lib/python3.10/site-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages:/home/mgiglia/workspaces/rlbot_ws/install/trajectory_generator_pkg/lib/python3.10/site-packages"
+            },
+            "preLaunchTask": "full-setup",
+        },
+        {
+            "name": "Python: rlbot_tester",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "/home/mgiglia/workspaces/rlbot_ws/src/rlbot_bridge_pkg/rlbot_bridge_pkg/testing_scripts/rlbot_tester.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "/home/mgiglia/workspaces/rlbot_ws/install/simple_controller_pkg/lib/python3.10/site-packages:/home/mgiglia/workspaces/rlbot_ws/install/rlbot_msgs/lib/python3.10/site-packages:/home/mgiglia/workspaces/rlbot_ws/install/rlbot_bridge_pkg/lib/python3.10/site-packages:/home/mgiglia/workspaces/rlbot_ws/install/plotter/lib/python3.10/site-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages:/home/mgiglia/workspaces/rlbot_ws/install/trajectory_generator_pkg/lib/python3.10/site-packages"
+            },
+            "args": [
+                "-t 0.1",
+                "-s 0.0"
+            ]
+        },
+        {
+            "name": "Python: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "preLaunchTask": "full-setup",
+            "env": {
+                "PYTHONPATH": "/home/mgiglia/workspaces/rlbot_ws/install/simple_controller_pkg/lib/python3.10/site-packages:/home/mgiglia/workspaces/rlbot_ws/install/rlbot_msgs/lib/python3.10/site-packages:/home/mgiglia/workspaces/rlbot_ws/install/rlbot_bridge_pkg/lib/python3.10/site-packages:/home/mgiglia/workspaces/rlbot_ws/install/plotter/lib/python3.10/site-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages:/home/mgiglia/workspaces/rlbot_ws/install/trajectory_generator_pkg/lib/python3.10/site-packages"
+            }
+            // "cwd": "${workspaceFolder}/src/rlbot_bridge_pkg/rlbot_bridge_pkg"
+        }
+    ]
+}
