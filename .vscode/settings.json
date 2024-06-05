@@ -5,7 +5,8 @@
     "/opt/ros/humble/local/lib/python3.10/dist-packages",
     "/home/mgiglia/workspaces/rlbot_ws/install/rlbot_msgs/lib/python3.10/site-packages",
     "/home/mgiglia/workspaces/rlbot_ws/src/rlbot_bridge_pkg/lib/.venv/lib/python3.10/site-packages",
-    "/home/mgiglia/workspaces/rlbot_ws/install/trajectory_generator_pkg/lib/python3.10/site-packages"
+    "/home/mgiglia/workspaces/rlbot_ws/install/trajectory_generator_pkg/lib/python3.10/site-packages",
+    "{workspaceFolder}/src/**"
 ],
 "python.analysis.extraPaths": [
     "/home/mgiglia/workspaces/rlbot_ws/install/rlbot_bridge_pkg/lib/python3.10/site-packages",
@@ -13,7 +14,8 @@
     "/opt/ros/humble/local/lib/python3.10/dist-packages",
     "/home/mgiglia/workspaces/rlbot_ws/install/rlbot_msgs/lib/python3.10/site-packages",
     "/home/mgiglia/workspaces/rlbot_ws/src/rlbot_bridge_pkg/lib/.venv/lib/python3.10/site-packages",
-    "/home/mgiglia/workspaces/rlbot_ws/install/trajectory_generator_pkg/lib/python3.10/site-packages"
+    "/home/mgiglia/workspaces/rlbot_ws/install/trajectory_generator_pkg/lib/python3.10/site-packages",
+    "{workspaceFolder}/src/**"
 ],
 "cmake.configureOnOpen": false
 }
