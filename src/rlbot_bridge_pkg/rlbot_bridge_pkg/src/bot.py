@@ -134,7 +134,7 @@ class AgentLifecycleNode(LifecycleNode):
         self.ros_controls.steer = np.clip(msg.angular.z, -1 ,1)
         self.ros_controls.boost = int(msg.linear.y)
 
-    def reset_game_state(self, request, response):
+    def reset_game_state(self, request: ResetGameState.Request, response: ResetGameState.Response):
         try:
             self.get_logger().info(f"Incoming request: {request}")
             car = request.rigid_body_tick.bot_state
@@ -143,10 +143,11 @@ class AgentLifecycleNode(LifecycleNode):
             carv = car.twist.linear
             carw = car.twist.angular
             ball = request.rigid_body_tick.ball_state.pose.position
+            ballv = request.rigid_body_tick.ball_state.twist.linear
             car_state = CarState(boost_amount=100,
-                                physics=Physics(location = Vector3(x=carp.x, y=carp.y), velocity=Vector3(x=carv.x,y=carv.y), rotation=Rotator(0, 0, 0),
+                                physics=Physics(location = Vector3(x=carp.x, y=carp.y, z=carp.z), velocity=Vector3(x=carv.x,y=carv.y, z=carv.z), rotation=Rotator(0, 0, 0),
                                 angular_velocity=Vector3(carw.x, carw.y, carw.z)))
-            ball_state = BallState(Physics(location=Vector3(ball.x, ball.y, ball.z)))
+            ball_state = BallState(Physics(location=Vector3(ball.x, ball.y, ball.z), velocity=Vector3(ballv.x, ballv.y, ballv.z)))
             game_info_state = GameInfoState(world_gravity_z=-660)
             game_state = GameState(ball=ball_state, cars={self.index: car_state}, game_info=game_info_state)
             self.set_game_state(game_state)
@@ -229,6 +230,7 @@ class MyBot(BaseAgent, AgentLifecycleNode):
         gtp = RigidBodyTick()
         gtp = self.get_rigid_body_tick()
         msg = RigidBodyTickMsg()
+        bp = gtp.ball.state.location
         q = gtp.players[self.index].state.rotation
         p = gtp.players[self.index].state.location
         v = gtp.players[self.index].state.velocity
@@ -252,6 +254,11 @@ class MyBot(BaseAgent, AgentLifecycleNode):
         msg.bot_state.throttle = throttle
         msg.bot_state.steer = steer
         msg.bot_state.vmag = np.linalg.norm([v.x, v.y, v.z])
+
+        # Ball state
+        msg.ball_state.pose.position.x = bp.x
+        msg.ball_state.pose.position.y = bp.y
+        msg.ball_state.pose.position.z = bp.z
 
         msg.roll = rotation.roll
         msg.pitch = rotation.pitch
