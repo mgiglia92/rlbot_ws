@@ -71,12 +71,12 @@ class TrajectoryOpti(Opti):
 
     def f(self,x,u):
         # return vertcat(0,0,0,0,0)
-        return vertcat( x[6]*cos(x[4]+x[5])          ,     #xdot
-                        x[6]*sin(x[4]+x[5]),     #ydot
-                        x[6]*cos(x[4]),     #xddot
-                        x[6]*sin(x[4]),     #yddot
-                        u[1]*x[6]*0.01,               #thetadot
-                        0,                  #theatddot
+        return vertcat( x[6]*cos(x[4]),     #xdot
+                        x[6]*sin(x[4]),     #ydot
+                        u[0]*cos(x[4]),     #xddot
+                        u[0]*sin(x[4]),     #yddot
+                        x[5],#u[1]*x[6]*0.01,               #thetadot
+                        u[1],                  #theatddot
                         u[0])               #vmagdot
     # Numerically evaluate xdot
     def fsim(self,x,u):
