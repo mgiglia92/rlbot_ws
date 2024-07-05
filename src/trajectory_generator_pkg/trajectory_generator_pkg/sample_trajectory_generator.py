@@ -109,10 +109,12 @@ class TrajectoryOpti(Opti):
     
     def set_constraints(self):
         self.set_rk4(self.X,self.U,self.T,self.N)
-        self.subject_to(self.bounded(-1, self.U[1,:], 1)) # Bound U
+        self.subject_to(self.bounded(-100, self.U[1,:], 100)) # Bound U
+        self.subject_to(self.bounded(-1*self.lut(self.X[6,:]), self.X[5,:], self.lut(self.X[6,:]))) # Bound Omega
         self.subject_to(self.bounded(-3300, self.U[0,:],1600)) # BOund U
         self.subject_to(self.bounded(0.1, self.T, 100)) # Bound Time
         self.subject_to(self.bounded(0, self.X[6,:], 2300)) # Bound vmag
+        # self.subject_to( self.bounded(0, self.X[2,:]**2 + self.X[3,:]**2, 2300))
         # self.subject_to(self.X[])
         # self.subject_to(self.X[2,-1]*sin(-1*self.X[4,-1]) + self.X[3,-1]*cos(-1*self.X[4,-1]) == 0)
         # self.subject_to(self.U[1,:] == self.X[5,:d-1])
