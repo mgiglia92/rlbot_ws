@@ -2,6 +2,14 @@ from casadi import *
 import matplotlib.pyplot as plt
 import numpy as np
 
+from casadi import interpolant
+from simple_controller_pkg.controller_util import SteeringRelationship, AccelerationRelationship    
+
+
+# xgrid = np.linspace(1,6,6)
+# V = [-1,-1,-2,-3,0,2]
+# lut = interpolant('LUT','bspline',[xgrid],V)
+
 class ActiveTraits:
     #TODO: Make default values work for any sizes
     def __init__(self, active=[0,0,0,0,0,0,0], values=[0,0,0,0,0,0,0]):
