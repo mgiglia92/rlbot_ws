@@ -19,6 +19,8 @@ class ActiveTraits:
         self.length = lambda: len(self.active)
 
 class TrajectoryOpti(Opti):
+    lut = interpolant('LUT','bspline',[SteeringRelationship.vel],SteeringRelationship.w)
+
     # # Just a basic tester to test rk4 integrarion and plot
     # def testrk4(self):
     #     N = self.N
