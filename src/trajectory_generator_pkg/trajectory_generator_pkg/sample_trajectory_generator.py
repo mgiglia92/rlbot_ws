@@ -10,6 +10,7 @@ from simple_controller_pkg.controller_util import SteeringRelationship, Accelera
 # V = [-1,-1,-2,-3,0,2]
 # lut = interpolant('LUT','bspline',[xgrid],V)
 
+
 class ActiveTraits:
     #TODO: Make default values work for any sizes
     def __init__(self, active=[0,0,0,0,0,0,0], values=[0,0,0,0,0,0,0]):
@@ -20,7 +21,8 @@ class ActiveTraits:
 
 class TrajectoryOpti(Opti):
     lut = interpolant('LUT','bspline',[SteeringRelationship.vel],SteeringRelationship.w)
-
+    IC: ActiveTraits
+    FC: ActiveTraits
     # # Just a basic tester to test rk4 integrarion and plot
     # def testrk4(self):
     #     N = self.N
@@ -133,20 +135,28 @@ class TrajectoryOpti(Opti):
             if IC.active[i]: self.subject_to(self.X[i,0] == vertcat(IC.values[i]))
             if FC.active[i]: self.subject_to(self.X[i,-1] == vertcat(FC.values[i]))
 
+        self.IC = IC
+        self.FC = FC
+
     def initial_guess(self):
         ti = 1
         self.set_initial(self.T, ti)
-        x = np.array([1, 1, 1, 1, 1, 1, 1])
-        u = np.array([1000,0])
+        x = np.array(self.IC)
+        u = np.array([100,100])
+
+        # Set Initial and final
+
+        xi = np.array(self.IC.values)
+        xf = np.array(self.FC.values)
+        xd = (xf-xi)/self.N
         for i in range(1, self.N):
-            self.set_initial(self.X[:,i], x)
-            self.set_initial(self.U[:,i], u)
-            x = self.sim_rk4(x,u, ti, self.N)
-            print(f"i:{i} x: {x}")
+            self.set_initial(self.X[:,i], xi+(xd*i))
+
+            # print(f"i:{i} x: {x}")
         pass
 
-    def reset_optimizer(self, IC, FC):
-        self.set_vars(7,2,21)
+    def reset_optimizer(self, IC, FC, N):
+        self.set_vars(7,2,N)
         self.subject_to() # Reset constraints
         self.set_constraints()
         self.set_initialization_finalization_constraints(IC, FC)
@@ -169,7 +179,7 @@ def main():
     # opti.testrk4()
     IC = ActiveTraits([1,1,1,1,1,1,1],[0, 0, 0, 0, 0, 0,1000])
     FC = ActiveTraits([1,1,0,0,1 ,0,1], [0, 2000, 0, 0, 0, 0, 100])
-    sol = opti.reset_optimizer(IC, FC)
+    sol = opti.reset_optimizer(IC, FC, TrajectorySeed().N)
 
     # IC = ActiveTraits([1,1,1,1,1,1,1],[0, 0, 0,0,1.5,0,0])
     # FC = ActiveTraits([1,1,0,0,1,0,0], [2000, 1000, 0, 0, 0, 0, 0])
@@ -234,7 +244,7 @@ def main():
 
     plt.show(block=False)
     plt.pause(0.01)
-    print("DEBUG")
+    print("DE5BUG")
 
 if __name__ == "__main__":
     main()    
