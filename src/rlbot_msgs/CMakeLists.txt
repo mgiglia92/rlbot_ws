@@ -15,10 +15,13 @@ find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/State.msg"
+  "msg/ActiveTraits.msg"
   "msg/RigidBodyTick.msg"
   "msg/PIDGains.msg"
   "msg/TrajectoryReference.msg"
+  "msg/TrajectorySeed.msg"
   "msg/ControllerReference.msg"
+  "srv/GetOptimalTrajectory.srv"
   "srv/ResetGameState.srv"
   "srv/SetGains.srv"
   "srv/TwistSetpoint.srv"

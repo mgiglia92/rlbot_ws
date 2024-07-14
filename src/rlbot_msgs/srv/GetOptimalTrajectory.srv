@@ -1,3 +1,6 @@
-GameTime bot_time
+float32 bot_time
 State bot_state
+ActiveTraits ic
+ActiveTraits fc
 ---
+TrajectorySeed trajectory
