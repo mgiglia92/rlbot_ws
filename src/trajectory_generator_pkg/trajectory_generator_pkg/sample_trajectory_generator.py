@@ -15,8 +15,8 @@ class ActiveTraits:
     #TODO: Make default values work for any sizes
     def __init__(self, active=[0,0,0,0,0,0,0], values=[0,0,0,0,0,0,0]):
         assert len(active) == len(values), f"Mismatched lengths: {len(active)} {len(values)}"
-        self.active = active
-        self.values = values
+        self.active = np.array(active, dtype=np.int32)
+        self.values = np.array(values, dtype=np.float32)
         self.length = lambda: len(self.active)
 
 class TrajectoryOpti(Opti):
