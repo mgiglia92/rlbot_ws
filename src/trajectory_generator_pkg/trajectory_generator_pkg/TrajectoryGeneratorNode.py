@@ -26,7 +26,7 @@ class TrajectoryMsgHelper(TrajectorySeed):
         steer = sol.value(optimizer.U[1,:])
 
         seed = TrajectoryMsgHelper()
-        seed.populate(t,x,y,vmag,theta,thetadot,steer,accel, optimizer.IC, optimizer.FC)
+        seed.populate(t*tf,x,y,vmag,theta,thetadot,steer,accel, optimizer.IC, optimizer.FC)
         return seed
 
     # Populate the message
@@ -41,6 +41,7 @@ class TrajectoryMsgHelper(TrajectorySeed):
         self.accel =    seed.accel
         # self.IC =       seed.IC
         # self.FC =       seed.FC
+        self.populated = True
 
     def populate(self, t, x, y, vmag, theta, thetadot, steer, accel, IC, FC):
         for i in [t,x,y,vmag,theta,thetadot]:
@@ -69,9 +70,12 @@ class TrajectoryMsgHelper(TrajectorySeed):
 
     def plot_trajectory(self):
         plt.figure(1)
-        state = self.spline_trajectory(self.t)
+        # state = self.spline_trajectory(self.t)
         plt.plot(self.x, self.y,'g.-', markersize=10, label='xy path')
-        plt.plot(self.spline_trajectory(self.t)[:,0], self.spline_trajectory(self.t)[:,1], 'bo', markersize=1, label='[x,y]=poly(t)')
+        try:
+            plt.plot(self.spline_trajectory(self.t)[:,0], self.spline_trajectory(self.t)[:,1], 'bo', markersize=1, label='[x,y]=poly(t)')
+        except:
+            print("Failed to plot spline trajectory")
         plt.plot(self.IC.values[0],self.IC.values[1],'y*-', label='initial conditions')
         plt.plot(self.FC.values[0], self.FC.values[1], 'b*-', label='final conditions')
         # plt.legend()
@@ -88,16 +92,20 @@ class TrajectoryMsgHelper(TrajectorySeed):
         plt.pause(1)
     
     def get_trajectory_seed(self):
-        seed = TrajectorySeed()
-        seed.x = self.x
-        seed.y = self.y
-        seed.vmag = self.vmag
-        seed.theta = self.theta
-        seed.thetadot = self.thetadot
-        seed.steer = self.steer
-        seed.accel = self.accel
+        if self.populated:
+            seed = TrajectorySeed()
+            seed.t = self.t
+            seed.x = self.x
+            seed.y = self.y
+            seed.vmag = self.vmag
+            seed.theta = self.theta
+            seed.thetadot = self.thetadot
+            seed.steer = self.steer
+            seed.accel = self.accel
 
-        return seed
+            return seed
+        raise Exception('Trajectory Seed not populated')
+    
 class TrajectoryGenerator(Node):
     def __init__(self, IC=ActiveTraits(), FC=ActiveTraits()):
         super().__init__('trajectory_generator_node')
@@ -111,8 +119,8 @@ class TrajectoryGenerator(Node):
         self.optimizer = TrajectoryOpti()
         self.sol = None
         self.current_trajectory = CubicSpline([0,1,2,3], [1,2,3,4])
-        self.init_optimizer()
-        self.timer = self.create_timer(1, self.init_optimizer)
+        # self.init_optimizer()
+        # self.timer = self.create_timer(1, self.init_optimizer)
         # Service stuff
 
     def get_optimal_trajectory(self, req: GetOptimalTrajectory.Request, res: GetOptimalTrajectory.Response):
