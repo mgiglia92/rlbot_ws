@@ -145,7 +145,7 @@ class AgentLifecycleNode(LifecycleNode):
             ball = request.rigid_body_tick.ball_state.pose.position
             ballv = request.rigid_body_tick.ball_state.twist.linear
             car_state = CarState(boost_amount=100,
-                                physics=Physics(location = Vector3(x=carp.x, y=carp.y, z=carp.z), velocity=Vector3(x=carv.x,y=carv.y, z=carv.z), rotation=Rotator(0, 0, 0),
+                                physics=Physics(location = Vector3(x=carp.x, y=carp.y, z=carp.z), velocity=Vector3(x=carv.x,y=carv.y, z=carv.z), rotation=Rotator(pitch=request.rigid_body_tick.pitch, roll=request.rigid_body_tick.roll, yaw=request.rigid_body_tick.yaw),
                                 angular_velocity=Vector3(carw.x, carw.y, carw.z)))
             ball_state = BallState(Physics(location=Vector3(ball.x, ball.y, ball.z), velocity=Vector3(ballv.x, ballv.y, ballv.z)))
             game_info_state = GameInfoState(world_gravity_z=-660)
