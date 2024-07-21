@@ -62,23 +62,26 @@ def reset_game_request_from_active_traits(IC: ActiveTraits, FC: ActiveTraits) ->
     return request
 
 def main():
-    IC = ActiveTraits([1,1,0,0,1,0,0], [0,0,0,0,np.pi/2,0,0])
-    FC = ActiveTraits([1,1,0,0,1,0,1], [500,1000,0,0,3*np.pi/2,0,1200])
+    IC = ActiveTraits([1,1,0,0,1,0,1], [0,0,0,0,np.pi/2,0,0])
+    FC = ActiveTraits([1,1,0,0,1,0,1], [1000,1000,0,0,np.pi/2,0,1600])
 
     rclpy.init()
     exec = RandomTrajectoryExecutor()
     # Get trajectory
+    print("calling trajectory service")
     response = exec.execute(IC,FC)
+    print("Got Trajectory!")
     # Publish new trajectory to topic
     trajectory = TrajectoryMsgHelper()
     trajectory.init_from_seed(response)
-    exec.trajectory_publisher.publish(trajectory.get_trajectory_seed())
     # Reset Game State
-
+    print("Calling Reset Game State Service")
     future = exec.reset_cli.call_async(reset_game_request_from_active_traits(IC, FC))
     rclpy.spin_until_future_complete(exec, future)
     result = future.result()
-    
+    exec.trajectory_publisher.publish(trajectory.get_trajectory_seed())
+    print("Published trajectory")
+    # trajectory.plot_trajectory()
     print("DEBUG")
 
 if __name__ == "__main__":
