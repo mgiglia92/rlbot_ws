@@ -4,7 +4,7 @@ import numpy as np
 
 from casadi import interpolant
 from simple_controller_pkg.controller_util import SteeringRelationship, AccelerationRelationship    
-
+from rlbot_msgs.msg import TrajectorySeed
 
 # xgrid = np.linspace(1,6,6)
 # V = [-1,-1,-2,-3,0,2]
@@ -171,8 +171,12 @@ class TrajectoryOpti(Opti):
         options["print_status"] = False
         self.solver('ipopt')#,options)
         # self.solver("ipopt")
-        self.sol = self.solve()
-        return self.sol
+        try:
+            self.sol = self.solve()
+            return self.sol
+        except:
+            print("Solver failed! Returning state of solver")
+            return self.debug
 
 def main():
     opti = TrajectoryOpti()
