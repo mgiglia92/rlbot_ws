@@ -65,6 +65,8 @@ class TrajectoryMsgHelper(TrajectorySeed):
     def construct_spline(self):
         if(self.populated):
             self.spline_trajectory = CubicSpline(self.t, np.vstack((self.x,self.y, self.vmag, self.theta, self.thetadot)).T)
+            self.input_trajectory = CubicSpline(self.t[:-1], np.vstack((self.accel, self.steer)).T)
+        
         else:
             print("Trajectory Not Populated")
 
@@ -76,8 +78,12 @@ class TrajectoryMsgHelper(TrajectorySeed):
             plt.plot(self.spline_trajectory(self.t)[:,0], self.spline_trajectory(self.t)[:,1], 'bo', markersize=1, label='[x,y]=poly(t)')
         except:
             print("Failed to plot spline trajectory")
-        plt.plot(self.IC.values[0],self.IC.values[1],'y*-', label='initial conditions')
-        plt.plot(self.FC.values[0], self.FC.values[1], 'b*-', label='final conditions')
+        
+        try:
+            plt.plot(self.IC.values[0],self.IC.values[1],'y*-', label='initial conditions')
+            plt.plot(self.FC.values[0], self.FC.values[1], 'b*-', label='final conditions')
+        except:
+            print("Failed to plot ICs and FCs")
         # plt.legend()
         plt.figure(2)
         plt.plot(self.t, self.vmag, 'g.-', label='vel(t)')
@@ -144,9 +150,9 @@ class TrajectoryGenerator(Node):
         self.set_random_active_traits()
         try:
             self.sol = self.optimizer.reset_optimizer(self.IC, self.FC, TrajectorySeed().N)
-            print("")
             seed = TrajectoryMsgHelper.init_from_solution(self.sol, self.optimizer)
         except:
+            self.get_logger().error("Optimization Solver Failed")
             debug = self.optimizer.debug
             seed = TrajectoryMsgHelper.init_from_solution(debug, self.optimizer)
 
