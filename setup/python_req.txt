@@ -1,12 +1,15 @@
 async-generator
 casadi
+catkin_pkg
 certifi
 dataclasses
 docopt
+empy==3.3.4
 exceptiongroup
 flatbuffers
 h11
 inputs
+lark
 numpy
 outcome
 psutil
@@ -16,7 +19,6 @@ PySocks
 python-dotenv
 requirements-parser
 rlbot
-ros2-numpy
 selenium
 sniffio
 sortedcontainers
