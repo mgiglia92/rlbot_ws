@@ -10,6 +10,8 @@ flatbuffers
 h11
 inputs
 lark
+matplotlib==3.5.1
+netifaces==0.11.0
 numpy
 outcome
 psutil
@@ -18,7 +20,8 @@ pyquaternion
 PySocks
 python-dotenv
 requirements-parser
-rlbot
+rlbot==1.67.3  
+scipy==1.8.0
 selenium
 sniffio
 sortedcontainers
@@ -28,5 +31,6 @@ transforms3d
 trio
 trio-websocket
 types-setuptools
+websockets==9.1
 webdriver-manager
 wsproto
