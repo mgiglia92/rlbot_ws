@@ -253,6 +253,13 @@ class MyBot(BaseAgent, AgentLifecycleNode):
         msg.bot_state.steer = steer
         msg.bot_state.vmag = np.linalg.norm([v.x, v.y, v.z])
 
+        msg.ball_state.pose.position.x = gtp.ball.state.location.x
+        msg.ball_state.pose.position.y = gtp.ball.state.location.y
+        msg.ball_state.pose.position.z = gtp.ball.state.location.z
+        msg.ball_state.twist.linear.x = gtp.ball.state.velocity.x
+        msg.ball_state.twist.linear.y = gtp.ball.state.velocity.y
+        msg.ball_state.twist.linear.z = gtp.ball.state.velocity.z
+
         msg.roll = rotation.roll
         msg.pitch = rotation.pitch
         msg.yaw = rotation.yaw

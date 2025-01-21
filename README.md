@@ -36,3 +36,6 @@
 ## Next Things
 >- Add trajectory following controller (generate twist message from trajectory and err)
 >- Add boost usage.
+
+## python lib requirements
+make sure websockets==9.1 and netifaces==0.11.0
