@@ -34,3 +34,5 @@ types-setuptools
 websockets==9.1
 webdriver-manager
 wsproto
+fastapi
+uvicorn
