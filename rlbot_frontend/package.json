@@ -5,13 +5,22 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint:fix": "eslint . --fix",
+    "lint:check": "eslint . --no-error-on-unmatched-pattern",
+    "build": "npm run format && npm run lint && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-three/fiber": "^9.3.0",
+    "@types/three": "^0.179.0",
+    "eslint-plugin-import": "^2.31.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^6.30.1",
+    "three": "^0.179.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
@@ -27,9 +36,10 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
-    "prettier": "^3.5.3",
+    "prettier": "3.5.3",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.30.1",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vite-plugin-eslint": "^1.8.1"
   }
 }
